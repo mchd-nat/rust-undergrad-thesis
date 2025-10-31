@@ -1,8 +1,8 @@
 mod utils;
+static URL: &str = "https://www.amazon.com.br/";
 
 fn main() {
-    let url = "https://www.amazon.com.br/";
-    match reqwest::blocking::get(url) {
+    match reqwest::blocking::get(URL) {
         Ok(r) => {
             let bytes = r.bytes().unwrap();
             let html_content = String::from_utf8(bytes.to_vec());
@@ -17,7 +17,7 @@ fn main() {
             }
         },
         Err(e) => {
-            eprint!("Solicitação para {} falhou: {}", url, e);
+            eprint!("Solicitação para {} falhou: {}", URL, e);
         } 
     };
 }
