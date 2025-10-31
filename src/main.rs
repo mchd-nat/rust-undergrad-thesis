@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tokio::task;
 use uuid::Uuid;
+use tower_http::services::ServeDir;
 
 #[derive(Clone)]
 struct AppState {
@@ -45,6 +46,10 @@ async fn main() {
         .route("/", get(serve_html))
         .route("/run-crawler", post(run_crawler))
         .route("/crawler-result/{task_id}", get(get_crawler_result))
+        .nest_service(
+            "/assets",
+            ServeDir::new("assets")
+        )
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
@@ -64,7 +69,7 @@ async fn run_crawler(
     Json(payload): Json<CrawlerRequest>,
 ) -> impl IntoResponse {
     let task_id = Uuid::new_v4().to_string();
-    
+
     {
         let mut tasks = state.tasks.lock().unwrap();
         tasks.insert(
