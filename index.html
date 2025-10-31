@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="shortcut icon" href="../dog-face.ico" type="image/x-icon" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barrio&family=Jost:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
+    <title>Data-sniffing Caramelo</title>
+  </head>
+  <body>
+    <style>
+      ::selection {
+        background-color: #d3ac66;
+        color: #3e3e3e;
+      }
+
+      * {
+        padding: 0;
+        margin: 0;
+        font-family: "Jost", sans-serif;
+      }
+
+      body {
+        background-color: #3e3e3e;
+        margin: auto;
+        height: 100%;
+      }
+
+      .main {
+        margin: auto;
+        margin-top: 100px;
+        width: 846px;
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 72px;
+        margin-bottom: 20px;
+        font-family: "Barrio", system-ui;
+      }
+
+      p {
+        font-size: 28px;
+      }
+
+      h1,
+      p {
+        color: #d3ac66;
+      }
+
+      p {
+        font-weight: 500;
+      }
+
+      .input_section {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        margin-top: 20px;
+      }
+
+      #url {
+        background-color: transparent;
+        color: #d3ac66;
+        border-color: #d3ac66;
+        border-radius: 100px;
+        width: 100%;
+        padding: 10px 20px;
+        font-size: 16px;
+        text-align: center;
+        box-sizing: border-box;
+        border-style: solid;
+      }
+
+      #url:focus {
+        outline: none;
+      }
+
+      .buttons {
+        display: flex;
+        flex-direction: row;
+        margin: auto;
+      }
+
+      #more_info_button {
+        text-decoration: none;
+      }
+
+      #check_button,
+      #more_info_button,
+      #refresh_button {
+        border-radius: 8px;
+        font-size: 16px;
+        padding: 10px;
+        margin-top: 20px;
+        border-width: 2px;
+        border-style: solid;
+      }
+
+      #check_button,
+      #refresh_button {
+        background-color: #d3ac66;
+        color: #3e3e3e;
+        border-color: #d3ac66;
+        margin-right: 10px;
+      }
+
+      #check_button:hover,
+      #more_info_button,
+      #refresh_button:hover {
+        background-color: #3e3e3e;
+        border-color: #d3ac66;
+        color: #d3ac66;
+        cursor: pointer;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      #spinner circle {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: 0;
+        transform-origin: 50% 50%;
+        animation: spin 1s linear infinite;
+      }
+    </style>
+
+    <div class="main">
+      <h1>Data-sniffing Caramelo</h1>
+      <p id="subtitle">
+        Uma ferramenta rápida, eficiente, e gratuita para a auditoria de
+        conformidade com a Lei Geral de Proteção de Dados
+      </p>
+      <section class="input_section">
+        <label for="url"></label>
+        <input
+          type="text"
+          id="url"
+          value=""
+          placeholder="Insira a URL desejada"
+        />
+
+        <div class="buttons">
+          <button id="check_button">Checar website</button>
+          <a
+            id="more_info_button"
+            href="https://www.gov.br/governodigital/pt-br/lgpd-pagina-do-cidadao/o-que-e-a-lgpd"
+            target="_blank"
+          >
+            Saiba mais
+          </a>
+        </div>
+      </section>
+      <div class="results" id="results"></div>
+      <div id="spinner" style="display: none; margin-top: 20px">
+        <svg width="50" height="50" viewBox="0 0 50 50">
+          <circle
+            cx="25"
+            cy="25"
+            r="20"
+            stroke="#d3ac66"
+            stroke-width="5"
+            fill="none"
+            stroke-linecap="round"
+          />
+        </svg>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        document
+          .getElementById("check_button")
+          .addEventListener("click", run_crawler);
+      });
+
+      async function pollResults(task_id) {
+        const response = await fetch(`/crawler-result/${task_id}`);
+        const data = await response.json();
+        if (data.ready) {
+          console.log("Results:", data.results);
+        } else {
+          setTimeout(() => pollResults(task_id), 2000);
+        }
+      }
+
+      async function run_crawler() {
+        const subtitle = document.getElementById("subtitle");
+        const url_input = document.getElementById("url");
+        const buttons = document.getElementsByClassName("buttons")[0];
+        const resultsDiv = document.getElementById("results");
+        const spinner = document.getElementById("spinner");
+
+        subtitle.style.display = "none";
+        url_input.style.display = "none";
+        buttons.style.display = "none";
+
+        resultsDiv.innerHTML = "";
+        spinner.style.display = "block";
+
+        const startResp = await fetch("/run-crawler", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: url_input.value }),
+        });
+        const startData = await startResp.json();
+        if (!startData.success) return;
+
+        const task_id = startData.task_id;
+
+        const pollInterval = 2000;
+        const pollResults = async () => {
+          const res = await fetch(`/crawler-result/${task_id}`);
+          const data = await res.json();
+
+          if (!data.ready) {
+            setTimeout(pollResults, pollInterval);
+            return;
+          }
+
+          spinner.style.display = "none";
+
+          resultsDiv.innerHTML = `
+      <h2 style="margin-bottom: 28px; color: #d3ac66; font-weight: 500">
+        ${url_input.value} apresenta:
+      </h2>
+    `;
+
+          data.results.forEach((r) => {
+            const icon = r.passed ? "✔️" : "❌";
+            const div = document.createElement("div");
+            div.className = "result_item";
+            div.innerHTML = `<span class="result_icon">${icon}</span> 
+                       <span style="color: #d3ac66;" class="result_text">${r.check}</span>`;
+            resultsDiv.appendChild(div);
+          });
+
+          const div_refresh = document.createElement("div");
+          div_refresh.className = "refresh_item";
+          div_refresh.innerHTML =
+            '<button id="refresh_button" onclick="window.location.reload();">Nova consulta</button>';
+          resultsDiv.appendChild(div_refresh);
+        };
+
+        pollResults();
+      }
+    </script>
+  </body>
+</html>

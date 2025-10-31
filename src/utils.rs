@@ -1,81 +1,131 @@
-use crate::URL;
-
 use scraper::{Html, Selector};
-use serde_json::json;
 use serde::Serialize;
-use std::collections::VecDeque;
-use std::collections::{HashSet};
+use std::collections::{HashSet, VecDeque};
 use reqwest::Url;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct CheckResult {
     pub check: String,
     pub passed: bool,
     pub error: Option<String>,
 }
 
-pub fn parse(body: String) {
-    let document = Html::parse_document(&body);
-    let full_text: String = document.root_element().text().collect::<Vec<_>>().join(" ").trim().to_string().to_lowercase();
-
-    checklist(document, full_text);
-}
-
-pub fn checklist(document:Html, full_text: String) {
+pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
     let mut results = vec![];
+    
+    let base_url = match Url::parse(url) {
+        Ok(u) => u,
+        Err(e) => {
+            results.push(CheckResult {
+                check: "Erro ao processar URL".into(),
+                passed: false,
+                error: Some(e.to_string()),
+            });
+            return results;
+        }
+    };
+
+    let base_domain = base_url.domain().unwrap_or("").to_string();
+    
+    let mut to_visit: VecDeque<String> = VecDeque::new();
+    let mut visited: HashSet<String> = HashSet::new();
+    to_visit.push_back(url.to_string());
+
     let mut has_privacy_policy = false;
     let mut has_cookie_refusal = false;
 
-    let anchors = Selector::parse("a").unwrap();
-    let mut to_visit: VecDeque<&str> = VecDeque::new();
-    let mut visited = HashSet::new();
-    to_visit.insert(0, URL);
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .build()
+        .unwrap();
 
-    while let Some(base_url) = to_visit.pop_front() {
-        for link in document.select(&anchors) {
-            let abs_link = normalize_url(&link, &base_url);
-            if !visited.contains(&abs_link) {
-                println!("Visitando {}", &abs_link);
+    let max_pages = 30;
+    let mut pages_visited = 0;
 
-                if !has_privacy_policy {
-                    has_privacy_policy = full_text.contains("política de privacidade")
-                    || full_text.contains("notificação de privacidade");
+    while let Some(current_url) = to_visit.pop_front() {
+        if pages_visited >= max_pages {
+            break;
+        }
+
+        if visited.contains(&current_url) {
+            continue;
+        }
+
+        visited.insert(current_url.clone());
+        pages_visited += 1;
+
+        println!("Visiting: {}", current_url);
+
+        match client.get(&current_url).send().await {
+            Ok(response) => {
+                match response.text().await {
+                    Ok(html_content) => {
+                        let document = Html::parse_document(&html_content);
+                        let full_text: String = document
+                            .root_element()
+                            .text()
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                            .trim()
+                            .to_string()
+                            .to_lowercase();
+
+                        if !has_privacy_policy {
+                            has_privacy_policy = full_text.contains("política de privacidade")
+                                || full_text.contains("notificação de privacidade")
+                                || full_text.contains("privacy policy");
+                        }
+                        if !has_cookie_refusal {
+                            if full_text.contains("cookies") {
+                                if full_text.contains("recusar")
+                                || full_text.contains("negar")
+                                || full_text.contains("não aceitar")
+                                || full_text.contains("rejeitar") {
+                                    has_cookie_refusal = true;
+                                }
+                            }
+                        }
+
+                        if has_privacy_policy && has_cookie_refusal {
+                            break;
+                        }
+
+                        let anchors = Selector::parse("a").unwrap();
+                        for link in document.select(&anchors) {
+                            if let Some(href) = link.value().attr("href") {
+                                if let Ok(absolute_url) = base_url.join(href) {
+                                    let link_domain = absolute_url.domain().unwrap_or("");
+                                    
+                                    if link_domain == base_domain && !visited.contains(absolute_url.as_str()) {
+                                        to_visit.push_back(absolute_url.to_string());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Error reading page {}: {}", current_url, e);
+                    }
                 }
-                if !has_cookie_refusal {
-                    has_cookie_refusal = full_text.contains("cookies") 
-                    && (
-                        full_text.contains("recusar")
-                        || full_text.contains("negar")
-                        || full_text.contains("não aceitar")
-                    );
-                }
-
-                visited.insert(abs_link);
+            }
+            Err(e) => {
+                eprintln!("Error fetching {}: {}", current_url, e);
             }
         }
     }
 
-    results.push(CheckResult { check: "Política de Privacidade".into(), passed: has_privacy_policy, error: None });
-    results.push(CheckResult { check: "Opção de recusar coleta de Cookies".into(), passed: has_cookie_refusal, error: None });
+    results.push(CheckResult {
+        check: "Política de Privacidade".into(),
+        passed: has_privacy_policy,
+        error: None,
+    });
+    
+    results.push(CheckResult {
+        check: "Opção de recusar coleta de Cookies".into(),
+        passed: has_cookie_refusal,
+        error: None,
+    });
 
-    let results_json = json!({ "ready": true, "results": results });
-    println!("{}", results_json);
-}
-
-fn normalize_url(link: &scraper::ElementRef, base_url: &str) -> String {
-    if let Some(href) = link.value().attr("href") {
-        if let Ok(url) = Url::parse(href) {
-            url.to_string()
-        } else if let Ok(base) = Url::parse(base_url) {
-            if let Ok(joined) = base.join(href) {
-                joined.to_string()
-            } else {
-                href.to_string()
-            }
-        } else {
-            href.to_string()
-        }
-    } else {
-        String::new()
-    }
+    println!("Crawler finished. Visited {} pages.", pages_visited);
+    results
 }
