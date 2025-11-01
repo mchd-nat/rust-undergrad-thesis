@@ -31,6 +31,37 @@
         height: 100%;
       }
 
+      nav {
+        background-color: #d3ac66;
+        height: 80px;
+        text-align: center;
+      }
+
+      nav ul {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-evenly;
+        align-items: center;
+        height: 100%;
+        width: 520px;
+        margin: auto;
+      }
+
+      nav ul li {
+        color: #3e3e3e;
+        list-style: none;
+        font-weight: bold;
+      }
+
+      nav ul li a {
+        text-decoration: none;
+        color: #3e3e3e;
+      }
+
+      nav ul li a:hover {
+        text-decoration: underline;
+      }
+
       .main {
         margin: auto;
         margin-top: 100px;
@@ -135,49 +166,69 @@
         animation: spin 1s linear infinite;
       }
     </style>
-
-    <div class="main">
-      <h1>Data-sniffing Caramelo</h1>
-      <p id="subtitle">
-        Uma ferramenta rápida, eficiente, e gratuita para a auditoria de
-        conformidade com a Lei Geral de Proteção de Dados
-      </p>
-      <section class="input_section">
-        <label for="url"></label>
-        <input
-          type="text"
-          id="url"
-          value=""
-          placeholder="Insira a URL desejada"
-          onkeyup="filled()"
-        />
-
-        <div class="buttons">
-          <button id="check_button" onclick="run_crawler()" disabled>
-            Checar website
-          </button>
-          <a
-            id="more_info_button"
-            href="https://www.gov.br/governodigital/pt-br/lgpd-pagina-do-cidadao/o-que-e-a-lgpd"
-            target="_blank"
-          >
-            Saiba mais
-          </a>
-        </div>
-      </section>
-      <div class="results" id="results"></div>
-      <div id="spinner" style="display: none; margin-top: 20px">
-        <svg width="50" height="50" viewBox="0 0 50 50">
-          <circle
-            cx="25"
-            cy="25"
-            r="20"
-            stroke="#d3ac66"
-            stroke-width="5"
-            fill="none"
-            stroke-linecap="round"
+    <div>
+      <nav>
+        <ul>
+          <li>
+            <a
+              href="https://www.gov.br/governodigital/pt-br/lgpd-pagina-do-cidadao/o-que-e-a-lgpd"
+              target="_blank"
+              >O que é a LGPD?</a
+            >
+          </li>
+          <li>
+            <a
+              href="https://github.com/mchd-nat/rust-undergrad-thesis"
+              target="_blank"
+              >Código fonte</a
+            >
+          </li>
+          <li><a href="">Sobre</a></li>
+        </ul>
+      </nav>
+      <div class="main">
+        <h1>Data-sniffing Caramelo</h1>
+        <p id="subtitle">
+          Uma ferramenta rápida, eficiente, e gratuita para a auditoria de
+          conformidade com a Lei Geral de Proteção de Dados
+        </p>
+        <section class="input_section">
+          <label for="url"></label>
+          <input
+            type="text"
+            id="url"
+            value=""
+            placeholder="Insira a URL desejada"
+            onkeyup="filled()"
           />
-        </svg>
+
+          <div class="buttons">
+            <button id="check_button" onclick="run_crawler()" disabled>
+              Checar website
+            </button>
+            <a
+              id="more_info_button"
+              href="https://www.gov.br/governodigital/pt-br/lgpd-pagina-do-cidadao/o-que-e-a-lgpd"
+              target="_blank"
+            >
+              Saiba mais
+            </a>
+          </div>
+        </section>
+        <div class="results" id="results"></div>
+        <div id="spinner" style="display: none; margin-top: 20px">
+          <svg width="50" height="50" viewBox="0 0 50 50">
+            <circle
+              cx="25"
+              cy="25"
+              r="20"
+              stroke="#d3ac66"
+              stroke-width="5"
+              fill="none"
+              stroke-linecap="round"
+            />
+          </svg>
+        </div>
       </div>
     </div>
 
