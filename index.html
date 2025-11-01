@@ -155,10 +155,13 @@
           id="url"
           value=""
           placeholder="Insira a URL desejada"
+          onkeyup="filled()"
         />
 
         <div class="buttons">
-          <button id="check_button">Checar website</button>
+          <button id="check_button" onclick="run_crawler()" disabled>
+            Checar website
+          </button>
           <a
             id="more_info_button"
             href="https://www.gov.br/governodigital/pt-br/lgpd-pagina-do-cidadao/o-que-e-a-lgpd"
@@ -190,11 +193,13 @@
     </div>
 
     <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        document
-          .getElementById("check_button")
-          .addEventListener("click", run_crawler);
-      });
+      function filled() {
+        if (document.getElementById("url").value === "") {
+          document.getElementById("check_button").disabled = true;
+        } else {
+          document.getElementById("check_button").disabled = false;
+        }
+      }
 
       async function pollResults(task_id) {
         const response = await fetch(`/crawler-result/${task_id}`);
@@ -244,7 +249,7 @@
 
           resultsDiv.innerHTML = `
       <h2 style="margin-bottom: 28px; color: #d3ac66; font-weight: 500">
-        ${url_input.value} apresenta:
+        ${url_input.value}
       </h2>
     `;
 
