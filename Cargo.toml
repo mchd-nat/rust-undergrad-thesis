@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 axum = { version = "0.8.6" }
+chromiumoxide = { git = "https://github.com/mattsse/chromiumoxide", features = ["tokio-runtime"], default-features = false, branch = "main"}
 csv = "1.4.0"
 reqwest = { version = "0.12.24", features = ["blocking", "gzip", "brotli"] }
 scraper = "0.24.0"

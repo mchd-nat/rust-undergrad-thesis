@@ -1,15 +1,21 @@
-//use scraper::{Html, Selector};
-use scraper::Html;
+use scraper::{Html, Selector};
 use serde::Serialize;
-//use std::collections::{HashSet, VecDeque};
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use reqwest::Url;
+use reqwest::Response as R;
 
 #[derive(Serialize, Clone)]
 pub struct CheckResult {
     pub check: String,
     pub passed: bool,
     pub error: Option<String>,
+}
+
+pub async fn check_cookie_consent(response: &R) -> bool {
+    let r = response;
+    let cookie_headers = r.headers().get_all(reqwest::header::SET_COOKIE);
+    
+    cookie_headers.iter().next().is_none()
 }
 
 pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
@@ -71,17 +77,18 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
         }
     }
 
-    //let base_domain = base_url.domain().unwrap_or("").to_string();
+    let base_domain = base_url.domain().unwrap_or("").to_string();
     
     let mut to_visit: VecDeque<String> = VecDeque::new();
-    //let mut visited: HashSet<String> = HashSet::new();
+    let mut visited: HashSet<String> = HashSet::new();
     to_visit.push_back(url.to_string());
 
-    //let max_pages = 30;
-    //let mut pages_visited = 0;
-    let pages_visited = 0;
+    let max_pages = 30;
+    let mut pages_visited = 0;
 
-    /* while let Some(current_url) = to_visit.pop_front() {
+    let mut respects_cookie_consent = false;
+
+    while let Some(current_url) = to_visit.pop_front() {
         if pages_visited >= max_pages {
             break;
         }
@@ -97,19 +104,11 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
 
         match client.get(&current_url).send().await {
             Ok(response) => {
+                respects_cookie_consent = check_cookie_consent(&response).await;
+
                 match response.text().await {
                     Ok(html_content) => {
                         let document = Html::parse_document(&html_content);
-                        /* let full_text: String = document
-                            .root_element()
-                            .text()
-                            .collect::<Vec<_>>()
-                            .join(" ")
-                            .trim()
-                            .to_string()
-                            .to_lowercase(); */
-
-                        // add here
 
                         let anchors = Selector::parse("a").unwrap();
                         for link in document.select(&anchors) {
@@ -133,7 +132,7 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
                 eprintln!("Error fetching {}: {}", current_url, e);
             }
         }
-    } */
+    }
 
     results.push(CheckResult {
         check: "Política de Privacidade".into(),
@@ -144,6 +143,12 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
     results.push(CheckResult {
         check: "Opção de recusar coleta de Cookies".into(),
         passed: has_cookie_refusal,
+        error: None,
+    });
+
+    results.push(CheckResult {
+        check: "Coleta cookies somente após consentimento do usuário".into(),
+        passed: respects_cookie_consent,
         error: None,
     });
 
