@@ -1468,6 +1468,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "robotstxt-rs"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f041def350ff60567376b65f35405e5e5a3e8b42afc7d89de2ea5d8fbaf0937e"
+dependencies = [
+ "reqwest",
+ "tokio",
+]
+
+[[package]]
 name = "rust-undergrad-thesis"
 version = "0.1.0"
 dependencies = [
@@ -1475,6 +1485,7 @@ dependencies = [
  "chromiumoxide",
  "csv",
  "reqwest",
+ "robotstxt-rs",
  "scraper",
  "serde",
  "serde_json",
