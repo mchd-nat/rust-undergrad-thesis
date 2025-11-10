@@ -43,6 +43,7 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
 
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
+        .user_agent("DataSniffingCaramelo (natalias2@mx2.unisc.br)")
         .build()
         .unwrap();
     

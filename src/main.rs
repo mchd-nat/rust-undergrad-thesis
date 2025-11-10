@@ -52,9 +52,15 @@ async fn main() {
         )
         .with_state(state);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:10000")
+    let mut listener = tokio::net::TcpListener::bind("0.0.0.0:10000")
         .await
         .unwrap();
+
+    if cfg!(debug_assertions) {
+        listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+            .await
+            .unwrap();
+    }
     
     axum::serve(listener, app).await.unwrap();
 }
