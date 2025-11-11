@@ -47,6 +47,7 @@ async fn main() {
         .route("/", get(serve_html))
         .route("/run-crawler", post(run_crawler))
         .route("/crawler-result/{task_id}", get(get_crawler_result))
+        .route("/about", get(about))
         .nest_service(
             "/assets",
             ServeDir::new("assets")
@@ -130,4 +131,9 @@ async fn get_crawler_result(
             }),
         ),
     }
+}
+
+async fn about() -> Html<String> {
+    let html_content = include_str!("../static/about.html");
+    Html(html_content.to_string())
 }
