@@ -60,6 +60,8 @@ nav ul li a:hover {
   margin-top: 100px;
   width: 846px;
   text-align: center;
+  height: fit-content;
+  box-sizing: border-box;
 }
 
 h1 {
@@ -162,34 +164,146 @@ p {
 #about {
   margin: auto;
   margin-top: 100px;
-  width: 846px;
+  width: 100%;
   text-align: center;
-}
-
-#about {
   margin-top: 60px;
+  background-color: #d3ac66;
+  height: 100%;
+  padding: 40px 200px;
+  box-sizing: border-box;
 }
 
 #about h2 {
   font-size: 45px;
   margin-bottom: 20px;
   font-family: "Barrio", system-ui;
-  margin-top: 60px;
 }
 
 #about p,
 #about ul li {
   font-size: 16px;
-  text-align: left;
+  text-align: justify;
   line-height: 25px;
   margin-bottom: 10px;
   font-weight: 400;
 }
 
-#about ul li {
-  color: #d3ac66;
+#about ul li,
+#about h2,
+#about p {
+  color: #1d1008;
 }
 
-#last {
-  margin-bottom: 100px !important;
+/* footer */
+
+footer {
+  height: 100px;
+}
+
+footer ul {
+  margin: 50px 100px;
+  box-sizing: border-box;
+}
+
+footer ul {
+  list-style: none;
+  text-align: center;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+}
+
+footer li {
+  line-height: 25px;
+}
+
+footer ul li a {
+  color: #d3ac66;
+  text-decoration: none;
+}
+
+/* responsive */
+
+@media (max-width: 995px) {
+  #main {
+    width: 750px;
+  }
+}
+
+@media (max-width: 855px) {
+  #main {
+    width: 650px;
+  }
+
+  #about {
+    padding-left: 100px;
+    padding-right: 100px;
+  }
+}
+
+@media (max-width: 775px) {
+  #main {
+    width: 550px;
+  }
+}
+
+@media (max-width: 650px) {
+  #main {
+    width: 500px;
+  }
+
+  #about h2 {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 590px) {
+  #main {
+    width: 450px;
+  }
+
+  h1 {
+    font-size: 58px;
+  }
+
+  #main p {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 525px) {
+  #main {
+    width: 400px;
+  }
+
+  nav {
+    display: none;
+  }
+}
+
+@media (max-width: 490px) {
+  #main {
+    width: 350px;
+  }
+
+  footer ul {
+    flex-direction: column;
+  }
+
+  footer ul li {
+    line-height: 35px;
+  }
+}
+
+@media (max-width: 415px) {
+  #main {
+    width: 300px;
+  }
+}
+
+@media (max-width: 400px) {
+  #about {
+    padding-left: 50px;
+    padding-right: 50px;
+  }
 }

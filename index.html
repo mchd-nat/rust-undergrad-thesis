@@ -14,6 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Barrio&family=Jost:ital,wght@0,100..900;1,100..900&display=swap"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="/static/style.css" />
     <title>Data-Sniffing Caramelo</title>
   </head>
@@ -21,24 +22,25 @@
     <div>
       <nav>
         <ul>
-          <li>
-            <a>Home</a>
-          </li>
-          <li>
+          <li class="lgpd">
             <a
               href="https://www.gov.br/governodigital/pt-br/lgpd-pagina-do-cidadao/o-que-e-a-lgpd"
               target="_blank"
               >O que é a LGPD?</a
             >
           </li>
-          <li>
+          <li class="source">
             <a
               href="https://github.com/mchd-nat/rust-undergrad-thesis"
               target="_blank"
               >Código fonte</a
             >
           </li>
-          <li><a href="/about">Sobre</a></li>
+          <li>
+            <a href="#about">
+              Sobre
+            </a>
+          </li>
         </ul>
       </nav>
       <div id="main">
@@ -86,6 +88,41 @@
           </svg>
         </div>
       </div>
+      <div id="about">
+        <h2>Sobre a ferramenta</h2>
+        <p>
+          <em>Data-Sniffing Caramelo</em> é seu cão farejador virtual que
+          inspeciona sites da web para encontrar infrações à Lei Geral de
+          Proteção de Dados.
+        </p>
+        <p>
+          A ferramenta ainda está em desenvolvimento. No momento, ela é capaz de fazer quatro checagens:
+          <ul>
+            <li>Presença (ou ausência) de uma política de privacidade;</li>
+            <li>Presença (ou ausência) de aviso sobre a coleta de cookies e a opção de recusar tal coleta;</li>
+            <li>Se há coleta de cookies <em>antes</em> de o usuário dar seu consentimento;</li>
+            <li>Se campos de senha (como em formulários de cadastro) oferecem alguma checagem para garantir que a senha escolhida pelo usuário é forte e segura.</li>
+          </ul>
+        </p>
+        <h2>Sobre a dev</h2>
+        <p id="last">Sou estudante do curso de Ciência da Computação na Universidade de Santa Cruz do Sul e desenvolvi essa ferramenta como parte do meu trabalho de conclusão de curso. Tenho alguns trabalhos publicados na área da Lei Geral de Proteção de Dados e como essa é aplicada ao contexto de websites e aplicativos móveis.</p>
+      </div>
+      <footer>
+        <ul>
+          <li>
+            <a href="https://github.com/mchd-nat/rust-undergrad-thesis">
+              Projeto no Github
+            </a>
+          </li>
+          <li class="lgpd">
+            <a
+              href="https://www.gov.br/governodigital/pt-br/lgpd-pagina-do-cidadao/o-que-e-a-lgpd"
+              target="_blank"
+              >O que é a LGPD?</a
+            >
+          </li>
+        </ul>
+      </footer>
     </div>
 
     <script>
