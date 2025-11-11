@@ -52,6 +52,10 @@ async fn main() {
             "/assets",
             ServeDir::new("assets")
         )
+        .nest_service(
+            "/static", 
+            ServeDir::new("static")
+        )
         .with_state(state);
 
     let mut listener = tokio::net::TcpListener::bind("0.0.0.0:10000")
