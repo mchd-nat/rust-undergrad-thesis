@@ -31,17 +31,8 @@ pub async fn check_robots(url: String) -> bool {
 
 pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
     let mut results = vec![];
-    let new_url: &str;
-    let aux: String;
-
-    if !url.contains("http") || !url.contains("https") {
-        aux = "https://".to_owned().to_string() + url;
-        new_url = aux.as_str();
-    } else {
-        new_url = url;
-    }
     
-    let base_url = match Url::parse(&new_url) {
+    let base_url = match Url::parse(&url) {
         Ok(u) => u,
         Err(e) => {
             results.push(CheckResult {

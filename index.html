@@ -57,11 +57,10 @@
             id="url"
             value=""
             placeholder="Insira a URL desejada"
-            onkeyup="filled()"
           />
 
           <div class="buttons">
-            <button id="check_button" onclick="run_crawler()" disabled>
+            <button id="check_button" onclick="run_crawler()">
               Checar website
             </button>
             <a
@@ -109,11 +108,6 @@
       </div>
       <footer>
         <ul>
-          <li>
-            <a href="https://github.com/mchd-nat/rust-undergrad-thesis">
-              Projeto no Github
-            </a>
-          </li>
           <li class="lgpd">
             <a
               href="https://www.gov.br/governodigital/pt-br/lgpd-pagina-do-cidadao/o-que-e-a-lgpd"
@@ -121,17 +115,18 @@
               >O que é a LGPD?</a
             >
           </li>
+          <li>
+            <a href="https://github.com/mchd-nat/rust-undergrad-thesis">
+              Código fonte
+            </a>
+          </li>
         </ul>
       </footer>
     </div>
 
     <script>
-      function filled() {
-        if (document.getElementById("url").value === "") {
-          document.getElementById("check_button").disabled = true;
-        } else {
-          document.getElementById("check_button").disabled = false;
-        }
+      window.onload = function() {
+        document.getElementById("url").value = "";
       }
 
       async function pollResults(task_id) {
@@ -145,10 +140,25 @@
       }
 
       async function run_crawler() {
+        const resultsDiv = document.getElementById("results");
+
+        if (document.getElementById("url").value === "") {
+          return;
+        } else if (
+          !document.getElementById("url").value.includes("http")
+          || !document.getElementById("url").value.includes("https")
+        ) {
+          const div = document.createElement("div");
+          div.className = "error";
+          div.innerHTML = `<br>
+          <span style="color: #d3ac66;" class="result_text">Insira uma URL válida que inclua o protocolo de transferência (https:// ou http://)</span>`;
+          resultsDiv.appendChild(div);
+          return;
+        }
+
         const subtitle = document.getElementById("subtitle");
         const url_input = document.getElementById("url");
         const buttons = document.getElementsByClassName("buttons")[0];
-        const resultsDiv = document.getElementById("results");
         const spinner = document.getElementById("spinner");
 
         subtitle.style.display = "none";
@@ -181,10 +191,10 @@
           spinner.style.display = "none";
 
           resultsDiv.innerHTML = `
-      <h2 style="margin-bottom: 28px; color: #d3ac66; font-weight: 500">
-        ${url_input.value}
-      </h2>
-    `;
+            <h2 style="margin-bottom: 28px; color: #d3ac66; font-weight: 500">
+              ${url_input.value}
+            </h2>
+          `;
 
           data.results.forEach((r) => {
             const icon = r.passed ? "✔️" : "❌";
