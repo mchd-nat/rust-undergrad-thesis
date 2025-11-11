@@ -21,3 +21,5 @@ A ferramenta foi criada como parte do trabalho de conclusão do curso de Ciênci
 
 - 📎 Por depender de texto como forma de encontrar tanto a política de privacidade quanto a opção de recusar coleta de cookies, é possível que o web crawler retorne um falso negativo caso o website analisado use termos diferentes daqueles previstos no código
 - 🔭 Se o campo de senha for carregado depois do resto da página, é provável que o web crawler não o encontre
+
+Encontrou mais alguma? Reporte na aba [Issues](https://github.com/mchd-nat/rust-undergrad-thesis/issues) do repositório.
