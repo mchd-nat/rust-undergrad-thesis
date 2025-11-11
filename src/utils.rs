@@ -83,13 +83,16 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
                             .to_lowercase();
 
                         has_privacy_policy = full_text.contains("política de privacidade")
-                            || full_text.contains("notificação de privacidade");
+                            || full_text.contains("notificação de privacidade")
+                            || full_text.contains("privacy policy");
                             
                         if full_text.contains("cookies") {
                             if full_text.contains("recusar")
                             || full_text.contains("negar")
                             || full_text.contains("não aceitar")
-                            || full_text.contains("rejeitar") {
+                            || full_text.contains("rejeitar")
+                            || full_text.contains("refuse")
+                            || full_text.contains("reject") {
                                 has_cookie_refusal = true;
                             }
                         }
