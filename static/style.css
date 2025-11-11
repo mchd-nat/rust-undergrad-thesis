@@ -222,6 +222,10 @@ footer ul li a {
   text-decoration: none;
 }
 
+footer ul li a:hover {
+  text-decoration: underline;
+}
+
 /* responsive */
 
 @media (max-width: 995px) {
