@@ -17,9 +17,15 @@ A ferramenta foi criada como parte do trabalho de conclusão do curso de Ciênci
 - 🎲 Presença (ou ausência) de justificativa para cada dado coletado em formulários
 - 🗑 Se há a opção de excluir ou anonimizar os dados coletados
 
+## 🧭 Como usar
+
+1. Acesse [https://datasniffing-caramelo.onrender.com/](https://datasniffing-caramelo.onrender.com/)
+2. Insira a URL do website que deseja verificar (certifique-se de incluir o protocolo — https:// ou http://)
+3. Clique em "Checar website" e aguarde enquanto o caramelo fareja a web para você!
+
 ## 📌 Limitações conhecidas
 
-- 📎 Por depender de texto como forma de encontrar tanto a política de privacidade quanto a opção de recusar coleta de cookies, é possível que o web crawler retorne um falso negativo caso o website analisado use termos diferentes daqueles previstos no código
-- 🔭 Se o campo de senha for carregado depois do resto da página, é provável que o web crawler não o encontre
+- Por depender de texto como forma de encontrar tanto a política de privacidade quanto a opção de recusar coleta de cookies, é possível que o web crawler retorne um falso negativo caso o website analisado use termos diferentes daqueles previstos no código
+- Se o campo de senha for carregado depois do resto da página, é provável que o web crawler não o encontre
 
 Encontrou mais alguma? Reporte na aba [Issues](https://github.com/mchd-nat/rust-undergrad-thesis/issues) do repositório.
