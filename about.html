@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="shortcut icon"
+      href="./assets/images/dog-face.ico"
+      type="image/x-icon"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barrio&family=Jost:ital,wght@0,100..900;1,100..900&display=swap"
+      rel="stylesheet"
+    />
+    <title>Data-Sniffing Caramelo</title>
+  </head>
+  <body>
+    <style>
+      ::selection {
+        background-color: #d3ac66;
+        color: #1f0f08;
+      }
+
+      * {
+        padding: 0;
+        margin: 0;
+        font-family: "Jost", sans-serif;
+      }
+
+      body {
+        background-color: #1f0f08;
+        margin: auto;
+        height: 100%;
+      }
+
+      nav {
+        background-color: #d3ac66;
+        height: 80px;
+        text-align: center;
+      }
+
+      nav ul {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-evenly;
+        align-items: center;
+        height: 100%;
+        width: 520px;
+        margin: auto;
+      }
+
+      nav ul li {
+        color: #1f0f08;
+        list-style: none;
+        font-weight: bold;
+      }
+
+      nav ul li a {
+        text-decoration: none;
+        color: #1f0f08;
+      }
+
+      nav ul li a:hover {
+        text-decoration: underline;
+      }
+
+      .decoration {
+        height: 100%;
+        width: 100%;
+        position: fixed;
+        z-index: -2;
+        top: 0;
+        left: 0;
+      }
+
+      #about {
+        margin: auto;
+        margin-top: 100px;
+        width: 846px;
+        text-align: center;
+      }
+
+      #about {
+        display: none;
+        margin-top: 60px;
+      }
+
+      h1 {
+        font-size: 72px;
+        margin-bottom: 20px;
+        font-family: "Barrio", system-ui;
+      }
+
+      h2 {
+        font-size: 45px;
+        margin-bottom: 20px;
+        font-family: "Barrio", system-ui;
+        margin-top: 60px;
+      }
+
+      #about p, 
+      #about ul li {
+        font-size: 16px;
+        text-align: left;
+        line-height: 25px;
+        margin-bottom: 10px;
+        font-weight: 400;
+      }
+
+      p {
+        font-size: 28px;
+        font-weight: 500;
+      }
+
+      h1,
+      h2,
+      #about ul li,
+      p {
+        color: #d3ac66;
+      }
+    </style>
+    <div>
+      <nav>
+        <ul>
+          <li>
+            <a onclick="goHome()">
+              Home
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://www.gov.br/governodigital/pt-br/lgpd-pagina-do-cidadao/o-que-e-a-lgpd"
+              target="_blank"
+              >O que é a LGPD?</a
+            >
+          </li>
+          <li>
+            <a
+              href="https://github.com/mchd-nat/rust-undergrad-thesis"
+              target="_blank"
+              >Código fonte</a
+            >
+          </li>
+          <li><a onclick="goAbout()">Sobre</a></li>
+        </ul>
+      </nav>
+      <div id="about">
+        <img class="decoration" src="./assets/images/site.png" alt="" />
+        <h2>Sobre a ferramenta</h2>
+        <p>
+          <em>Data-Sniffing Caramelo</em> é seu cão farejador virtual que
+          inspeciona sites da web para encontrar infrações à Lei Geral de
+          Proteção de Dados.
+        </p>
+        <p>
+          A ferramenta ainda está em desenvolvimento. No momento, ela é capaz de fazer quatro checagens:
+          <ul>
+            <li>Presença (ou ausência) de uma política de privacidade;</li>
+            <li>Presença (ou ausência) de aviso sobre a coleta de cookies e a opção de recusar tal coleta;</li>
+            <li>Se há coleta de cookies <em>antes</em> de o usuário dar seu consentimento;</li>
+            <li>Se campos de senha (como em formulários de cadastro) oferecem alguma checagem para garantir que a senha escolhida pelo usuário é forte e segura.</li>
+          </ul>
+        </p>
+        <h2>Sobre a dev</h2>
+        <p>Sou estudante do curso de Ciência da Computação na Universidade de Santa Cruz do Sul e desenvolvi essa ferramenta como parte do meu trabalho de conclusão de curso. Tenho alguns trabalhos publicados na área da Lei Geral de Proteção de Dados e como essa é aplicada ao contexto de websites e aplicativos móveis.</p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -66,20 +66,26 @@
         text-decoration: underline;
       }
 
-      #decoration {
+      .decoration {
         height: 100%;
         width: 100%;
-        position: absolute;
+        position: fixed;
         z-index: -2;
         top: 0;
         left: 0;
       }
 
-      .main {
+      #main,
+      #about {
         margin: auto;
         margin-top: 100px;
         width: 846px;
         text-align: center;
+      }
+
+      #about {
+        display: none;
+        margin-top: 60px;
       }
 
       h1 {
@@ -88,11 +94,29 @@
         font-family: "Barrio", system-ui;
       }
 
+      h2 {
+        font-size: 45px;
+        margin-bottom: 20px;
+        font-family: "Barrio", system-ui;
+        margin-top: 60px;
+      }
+
+      #about p,
+      #about ul li {
+        font-size: 16px;
+        text-align: left;
+        line-height: 25px;
+        margin-bottom: 10px;
+        font-weight: 400;
+      }
+
       p {
         font-size: 28px;
       }
 
       h1,
+      h2,
+      #about ul li,
       p {
         color: #d3ac66;
       }
@@ -183,6 +207,9 @@
       <nav>
         <ul>
           <li>
+            <a onclick="goHome()"> Home </a>
+          </li>
+          <li>
             <a
               href="https://www.gov.br/governodigital/pt-br/lgpd-pagina-do-cidadao/o-que-e-a-lgpd"
               target="_blank"
@@ -196,11 +223,11 @@
               >Código fonte</a
             >
           </li>
-          <li><a href="">Sobre</a></li>
+          <li><a href="/about.html">Sobre</a></li>
         </ul>
       </nav>
-      <div class="main">
-        <img id="decoration" src="./assets/images/site.png" alt="" />
+      <div id="main">
+        <img class="decoration" src="./assets/images/site.png" alt="" />
         <h1>Data-sniffing Caramelo</h1>
         <p id="subtitle">
           Uma ferramenta rápida, eficiente, e gratuita para a auditoria de
@@ -247,6 +274,17 @@
     </div>
 
     <script>
+      function goAbout() {
+        console.log("go about");
+        document.getElementById("about").display = "block";
+        document.getElementById("main").display = "none";
+      }
+
+      function goHome() {
+        document.getElementById("about").display = "none";
+        document.getElementById("main").display = "block";
+      }
+
       function filled() {
         if (document.getElementById("url").value === "") {
           document.getElementById("check_button").disabled = true;
