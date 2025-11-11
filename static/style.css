@@ -58,6 +58,7 @@ nav ul li a:hover {
 #main {
   margin: auto;
   margin-top: 100px;
+  margin-bottom: 100px;
   width: 846px;
   text-align: center;
   height: fit-content;
