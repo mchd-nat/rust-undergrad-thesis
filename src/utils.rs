@@ -1,3 +1,6 @@
+use crate::password_strength::password_has_basic_checks;
+use crate::password_strength::ChecksResult;
+
 use reqwest::Url;
 use reqwest::Response as R;
 use robotstxt_rs::RobotsTxt;
@@ -28,8 +31,17 @@ pub async fn check_robots(url: String) -> bool {
 
 pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
     let mut results = vec![];
+    let new_url: &str;
+    let aux: String;
+
+    if !url.contains("http") || !url.contains("https") {
+        aux = "https://".to_owned().to_string() + url;
+        new_url = aux.as_str();
+    } else {
+        new_url = url;
+    }
     
-    let base_url = match Url::parse(url) {
+    let base_url = match Url::parse(&new_url) {
         Ok(u) => u,
         Err(e) => {
             results.push(CheckResult {
@@ -50,6 +62,11 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
     if check_robots(base_url.to_string()).await {
         let mut has_privacy_policy = false;
         let mut has_cookie_refusal = false;
+        let mut has_password_policy: ChecksResult = ChecksResult{
+            password_input: true,
+            passed_checks: false,
+            error: false
+        };
 
         match client.get(base_url.clone()).send().await {
             Ok(response) => {
@@ -78,12 +95,12 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
                         }
                     }
                     Err(e) => {
-                        eprintln!("Error reading page {}: {}", base_url, e);
+                        eprintln!("Erro ao ler página {}: {}", base_url, e);
                     }
                 }
             }
             Err(e) => {
-                eprintln!("Error fetching {}: {}", base_url, e);
+                eprintln!("Erro ao tentar alcançar {}: {}", base_url, e);
             }
         }
 
@@ -110,13 +127,24 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
             visited.insert(current_url.clone());
             pages_visited += 1;
 
-            println!("Visiting: {}", current_url);
+            println!("Visitando: {}", current_url);
             if check_robots(current_url.to_string()).await {
                 match client.get(&current_url).send().await {
                     Ok(response) => {
                         if has_cookie_refusal {
                             respects_cookie_consent = check_cookie_consent(&response).await;
                         }
+
+                        let formatted_string = &current_url
+                            .to_lowercase()
+                            .replace(' ', "");
+
+                        if formatted_string.contains("cadastro") 
+                            || formatted_string.contains("signup")
+                            || formatted_string.contains("criar")
+                            || formatted_string.contains("nova") {
+                                has_password_policy = password_has_basic_checks(&current_url).await;
+                            }
 
                         match response.text().await {
                             Ok(html_content) => {
@@ -136,12 +164,12 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
                                 }
                             }
                             Err(e) => {
-                                eprintln!("Error reading page {}: {}", current_url, e);
+                                eprintln!("Erro ao ler página {}: {}", current_url, e);
                             }
                         }
                     }
                     Err(e) => {
-                        eprintln!("Error fetching {}: {}", current_url, e);
+                        eprintln!("Erro ao tentar alcançar {}: {}", current_url, e);
                     }
                 }
             } 
@@ -163,6 +191,14 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
             results.push(CheckResult {
                 check: "Coleta cookies somente após consentimento do usuário".into(),
                 passed: respects_cookie_consent,
+                error: None,
+            });
+        }
+
+        if has_password_policy.password_input && !has_password_policy.error {
+            results.push(CheckResult {
+                check: "Tem uma política de força de senha".into(),
+                passed: has_password_policy.passed_checks,
                 error: None,
             });
         }

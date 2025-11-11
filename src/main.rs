@@ -1,4 +1,5 @@
 mod utils;
+mod password_strength;
 
 use axum::{
     extract::{Path, State},
