@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 Natália Silva Machado
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 use scraper::{Html, Selector};
 
 pub struct ChecksResult {

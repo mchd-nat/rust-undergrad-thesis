@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2025 Natália Silva Machado
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 use crate::password_strength::password_has_basic_checks;
 use crate::password_strength::ChecksResult;
 
