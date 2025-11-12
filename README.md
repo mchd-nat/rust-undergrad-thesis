@@ -24,7 +24,7 @@ A ferramenta foi criada como parte do trabalho de conclusão do curso de Ciênci
 3. Clique em "Checar website" e aguarde enquanto o caramelo fareja a web para você!
 
 > [!IMPORTANT]
-> Ao inserir a URL, certifique-se de incluir o protocolo ("https://" ou "http://").
+> Ao inserir a URL, certifique-se de incluir o protocolo ("https://" ou "http://")
 
 ## 📌 Limitações conhecidas
 
