@@ -8,24 +8,53 @@
 
 A ferramenta foi criada como parte do trabalho de conclusão do curso de Ciência da Computação e ainda está em desenvolvimento. No momento, ela é capaz de fazer quatro checagens:
           
-- 📑 Presença (ou ausência) de uma política de privacidade
-- 🍪 Presença (ou ausência) de aviso sobre a coleta de cookies e a opção de recusar tal coleta
-- 🛡 Se há coleta de cookies <em>antes</em> de o usuário dar seu consentimento
-- 🔐 Se campos de criação de senha oferecem alguma checagem para garantir que a senha é forte e segura
+- [x] 📑 Presença (ou ausência) de uma política de privacidade
+- [x] 🍪 Presença (ou ausência) de aviso sobre a coleta de cookies e a opção de recusar tal coleta
+- [x] 🛡 Se há coleta de cookies <em>antes</em> de o usuário dar seu consentimento
+- [x] 🔐 Se campos de criação de senha oferecem alguma checagem para garantir que a senha é forte e segura
 
 ...com mais duas checagens ainda em desenvolvimento:
-- 🎲 Presença (ou ausência) de justificativa para cada dado coletado em formulários
-- 🗑 Se há a opção de excluir ou anonimizar os dados coletados
+- [ ] 🎲 Presença (ou ausência) de justificativa para cada dado coletado em formulários
+- [ ] 🗑 Se há a opção de excluir ou anonimizar os dados coletados
 
 ## 🧭 Como usar
 
 1. Acesse [https://datasniffing-caramelo.onrender.com/](https://datasniffing-caramelo.onrender.com/)
-2. Insira a URL do website que deseja verificar (certifique-se de incluir o protocolo — https:// ou http://)
+2. Insira a URL do website que deseja verificar
 3. Clique em "Checar website" e aguarde enquanto o caramelo fareja a web para você!
+
+> [!IMPORTANT]
+> Ao inserir a URL, certifique-se de incluir o protocolo ("https://" ou "http://").
 
 ## 📌 Limitações conhecidas
 
-- Por depender de texto como forma de encontrar tanto a política de privacidade quanto a opção de recusar coleta de cookies, é possível que o web crawler retorne um falso negativo caso o website analisado use termos diferentes daqueles previstos no código
+- Por se basear no texto da página para encontrar tanto a política de privacidade quanto a opção de recusar coleta de cookies, é possível que o web crawler retorne um falso negativo caso o website analisado use termos diferentes daqueles previstos no código<br>
+          <details>
+                    <summary>
+                              📑 Termos usados para encontrar a política de privacidade
+                    </summary>
+                    <ul>
+                              <li>"política de privacidade"</li>
+                              <li>"notificação de privacidade"</li>
+                              <li>"privacy policy"</li>
+                    </ul>
+          </details>
+          <details>
+                    <summary>
+                              🍪 Termos usados para encontrar a opção de recusar coleta de cookies
+                    </summary>
+                    <ul>
+                              <li>"recusar"</li>
+                              <li>"negar"</li>
+                              <li>"não aceitar"</li>
+                              <li>"rejeitar"</li>
+                              <li>"refuse"</li>
+                              <li>"reject"</li>
+                    </ul>
+          </details>
+
 - Se o campo de senha for carregado depois do resto da página, é provável que o web crawler não o encontre
 
-Encontrou mais alguma? Reporte na aba [Issues](https://github.com/mchd-nat/rust-undergrad-thesis/issues) do repositório.
+Encontrou mais algum problema ou limitação? Reporte na aba [Issues](https://github.com/mchd-nat/rust-undergrad-thesis/issues) do repositório.
+
+<br><br><p align="center">Copyright &copy; 2025-present <a href="https://mchd-nat.github.io/" target="_blank">Natália Silva Machado</a>
