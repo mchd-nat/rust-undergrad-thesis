@@ -26,7 +26,7 @@ use uuid::Uuid;
 use tower_http::services::ServeDir;
 
 #[derive(Clone)]
-struct AppState {
+pub struct AppState {
     tasks: Arc<Mutex<HashMap<String, TaskStatus>>>,
 }
 
@@ -37,7 +37,7 @@ struct TaskStatus {
 }
 
 #[derive(Deserialize)]
-struct CrawlerRequest {
+pub struct CrawlerRequest {
     url: String,
 }
 
@@ -89,7 +89,7 @@ async fn serve_html() -> impl IntoResponse {
     Html(html_content)
 }
 
-async fn run_crawler(
+pub async fn run_crawler(
     State(state): State<AppState>,
     Json(payload): Json<CrawlerRequest>,
 ) -> impl IntoResponse {
@@ -109,10 +109,17 @@ async fn run_crawler(
     let task_id_clone = task_id.clone();
     let state_clone = state.clone();
     let url = payload.url.clone();
-    
-    task::spawn(async move {
-        let results = utils::run_crawler(&url).await;
-        
+
+    task::spawn_blocking(move || {
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+
+        let results = rt.block_on(async {
+            utils::run_crawler(&url).await
+        });
+
         let mut tasks = state_clone.tasks.lock().unwrap();
         tasks.insert(
             task_id_clone,
@@ -124,7 +131,7 @@ async fn run_crawler(
     });
 
     (
-        StatusCode::OK,
+        axum::http::StatusCode::OK,
         Json(StartResponse {
             success: true,
             task_id,

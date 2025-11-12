@@ -3,13 +3,13 @@
 
 use scraper::{Html, Selector};
 
-pub struct ChecksResult {
+pub struct PasswordResult {
     pub password_input: bool,
     pub passed_checks: bool,
     pub error: bool
 }
 
-pub async fn password_has_basic_checks(url: &str) -> ChecksResult {
+pub async fn password_has_basic_checks(url: &str) -> PasswordResult {
     let client = reqwest::Client::builder()
         .cookie_store(true)
         .redirect(reqwest::redirect::Policy::limited(10))
@@ -22,7 +22,7 @@ pub async fn password_has_basic_checks(url: &str) -> ChecksResult {
         .await {
             Ok(r) => r,
             Err(_) => return {
-                ChecksResult {
+                PasswordResult {
                     password_input: false,
                     passed_checks: false,
                     error: true
@@ -33,7 +33,7 @@ pub async fn password_has_basic_checks(url: &str) -> ChecksResult {
     let body = match resp.text().await {
         Ok(r) => r,
         Err(_) => return {
-            ChecksResult {
+            PasswordResult {
                 password_input: false,
                 passed_checks: false,
                 error: true
@@ -45,7 +45,7 @@ pub async fn password_has_basic_checks(url: &str) -> ChecksResult {
     let input_sel = match Selector::parse(r#"input[type="password"]"#) {
         Ok(sel) => sel,
         Err(_) => return {
-            ChecksResult {
+            PasswordResult {
                 password_input: false,
                 passed_checks: false,
                 error: true
@@ -56,10 +56,10 @@ pub async fn password_has_basic_checks(url: &str) -> ChecksResult {
     let some_password_input = match document.select(&input_sel).next() {
         Some(r) => r,
         None => {
-            return ChecksResult {
+            return PasswordResult {
                 password_input: false,
                 passed_checks: false,
-                error: false, // not error, just no password field
+                error: false,
             }
         }
     };
@@ -73,7 +73,7 @@ pub async fn password_has_basic_checks(url: &str) -> ChecksResult {
     let script_sel = match Selector::parse("script") {
         Ok(sel) => sel,
         Err(_) => return {
-            ChecksResult {
+            PasswordResult {
                 password_input: false,
                 passed_checks: false,
                 error: true
@@ -97,7 +97,7 @@ pub async fn password_has_basic_checks(url: &str) -> ChecksResult {
         }
     }
 
-    ChecksResult {
+    PasswordResult {
         password_input: true,
         passed_checks: pattern.is_some() || minlength.is_some() || js_has_strength,
         error: false
