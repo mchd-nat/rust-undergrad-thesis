@@ -8,14 +8,14 @@
 
 A ferramenta foi criada como parte do trabalho de conclusão do curso de Ciência da Computação e ainda está em desenvolvimento. No momento, ela é capaz de fazer quatro checagens:
           
-- [x] 📑 Presença (ou ausência) de uma política de privacidade
-- [x] 🍪 Presença (ou ausência) de aviso sobre a coleta de cookies e a opção de recusar tal coleta
-- [x] 🛡 Se há coleta de cookies <em>antes</em> de o usuário dar seu consentimento
-- [x] 🔐 Se campos de criação de senha oferecem alguma checagem para garantir que a senha é forte e segura
+- [x] 📑 Presença (ou ausência) de uma política de privacidade [^1]
+- [x] 🍪 Presença (ou ausência) de aviso sobre a coleta de cookies e a opção de recusar tal coleta [^2]
+- [x] 🛡 Se há coleta de cookies <em>antes</em> de o usuário dar seu consentimento [^3]
+- [x] 🔐 Se campos de criação de senha oferecem alguma checagem para garantir que a senha é forte e segura [^4]
 
 ...com mais duas checagens ainda em desenvolvimento:
-- [ ] 🎲 Presença (ou ausência) de justificativa para cada dado coletado em formulários
-- [ ] 🗑 Se há a opção de excluir ou anonimizar os dados coletados
+- [ ] 🎲 Presença (ou ausência) de justificativa para cada dado coletado em formulários [^5]
+- [ ] 🗑 Se há a opção de excluir ou anonimizar os dados coletados [^6]
 
 ## 🧭 Como usar
 
@@ -56,5 +56,12 @@ A ferramenta foi criada como parte do trabalho de conclusão do curso de Ciênci
 - Se o campo de senha for carregado depois do resto da página, é provável que o web crawler não o encontre
 
 Encontrou mais algum problema ou limitação? Reporte na aba [Issues](https://github.com/mchd-nat/rust-undergrad-thesis/issues) do repositório.
+
+[^1]: Baseada nos princípios do Livre Acesso, da Transparência e da Responsabilização e prestação de contas, previstos na Lei Geral de Proteção de Dados.
+[^2]: Baseada no direito à informação sobre a possibilidade de não fornecer consentimento e sobre consequências da negativa, previsto na Lei Geral de Proteção de Dados.
+[^3]: Baseada no princípio da Finalidade, previsto na Lei Geral de Proteção de Dados.
+[^4]: Baseada no princípio da Segurança, previsto na Lei Geral de Proteção de Dados.
+[^5]: Baseada nos princípios da Transparência e da Finalidade, previstos na Lei Geral de Proteção de Dados.
+[^6]: Baseada no direito a anonimização, bloqueio ou eliminação de dados desnecessários, excessivos ou tratados em desconformidade com o disposto na LGPD, previsto na Lei Geral de Proteção de Dados.
 
 <br><br><p align="center">Copyright &copy; 2025-present <a href="https://mchd-nat.github.io/" target="_blank">Natália Silva Machado</a>
