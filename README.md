@@ -4,7 +4,7 @@
 
 ## 🛠 Sobre a ferramenta
 
-*Data-Sniffing Caramelo* é seu cão farejador virtual que inspeciona sites da web para encontrar infrações à Lei Geral de Proteção de Dados. 
+*Data-Sniffing Caramelo* é seu cão farejador virtual que inspeciona sites da web para encontrar infrações à [Lei Geral de Proteção de Dados](https://www.gov.br/esporte/pt-br/acesso-a-informacao/lgpd). 
 
 A ferramenta foi criada como parte do trabalho de conclusão do curso de Ciência da Computação e ainda está em desenvolvimento. No momento, ela é capaz de fazer quatro checagens:
           
