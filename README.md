@@ -57,6 +57,9 @@ A ferramenta foi criada como parte do trabalho de conclusão do curso de Ciênci
 
 Encontrou mais algum problema ou limitação? Reporte na aba [Issues](https://github.com/mchd-nat/rust-undergrad-thesis/issues) do repositório.
 
+## 📝 Licença
+Esse projeto é licensiado sob a GNU General Public License v3.0 — veja o arquivo [LICENSE](./LICENSE) para detalhes.
+
 [^1]: Baseada nos princípios do Livre Acesso, da Transparência e da Responsabilização e prestação de contas, previstos na Lei Geral de Proteção de Dados.
 [^2]: Baseada no direito à informação sobre a possibilidade de não fornecer consentimento e sobre consequências da negativa, previsto na Lei Geral de Proteção de Dados.
 [^3]: Baseada no princípio da Finalidade, previsto na Lei Geral de Proteção de Dados.
@@ -64,4 +67,4 @@ Encontrou mais algum problema ou limitação? Reporte na aba [Issues](https://gi
 [^5]: Baseada nos princípios da Transparência e da Finalidade, previstos na Lei Geral de Proteção de Dados.
 [^6]: Baseada no direito a anonimização, bloqueio ou eliminação de dados desnecessários, excessivos ou tratados em desconformidade com o disposto na LGPD, previsto na Lei Geral de Proteção de Dados.
 
-<br><br><p align="center">Copyright &copy; 2025-present <a href="https://mchd-nat.github.io/" target="_blank">Natália Silva Machado</a>
+<br><p align="center">Copyright &copy; 2025-present <a href="https://mchd-nat.github.io/" target="_blank">Natália Silva Machado</a>
