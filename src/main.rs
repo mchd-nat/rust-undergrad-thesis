@@ -55,6 +55,10 @@ async fn main() {
             "/static", 
             ServeDir::new("static")
         )
+        .nest_service(
+            "/scripts", 
+            ServeDir::new("scripts")
+        )
         .with_state(state);
 
     let mut listener = tokio::net::TcpListener::bind("0.0.0.0:10000")
