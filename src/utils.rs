@@ -6,12 +6,14 @@ use crate::password_strength::PasswordResult;
 
 use chromiumoxide::{Browser, BrowserConfig, Page};
 use chromiumoxide::cdp::browser_protocol::network::Cookie;
+use chromiumoxide::Element;
 use chromiumoxide::handler::viewport::Viewport;
 use futures_util::StreamExt;
 use robotstxt_rs::RobotsTxt;
 use scraper::{Html, Selector};
 use serde::Serialize;
 use std::collections::{HashSet, VecDeque};
+use tokio::time::Duration;
 use url::Url;
 
 #[derive(Serialize, Clone)]
@@ -51,13 +53,139 @@ pub async fn check_url(url: &String) -> bool {
         || formatted_url.contains("novaconta")
 }
 
-pub async fn allows_cookie_refusal(text: &String) -> bool {
-    text.contains("recusar")
-        || text.contains("negar")
-        || text.contains("não aceitar")
-        || text.contains("rejeitar")
-        || text.contains("refuse")
-        || text.contains("reject")
+pub async fn is_visible(el: &Element) -> bool {
+    match el
+        .call_js_fn(
+            r#"
+            (el) => {
+                const rect = el.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0 &&
+                       rect.bottom >= 0 && rect.right >= 0;
+            }
+            "#,
+            false,
+        )
+        .await
+    {
+        Ok(ret) => ret.result.value.and_then(|v| v.as_bool()).unwrap_or(false),
+        Err(_) => false,
+    }
+}
+
+pub async fn allows_cookie_refusal(page: &Page) -> bool {
+    
+    tokio::time::sleep(Duration::from_millis(3000)).await;
+
+    let banner_selectors = [
+        "#onetrust-banner-sdk",
+        "#CybotCookiebotDialog",
+        ".didomi-popup",
+        ".qc-cmp2-container",
+        ".trustarc-banner",
+        ".cookie-consent",
+        ".cookie-banner",
+        ".cookie-notice",
+        "[id*='cookie']",
+        "[class*='cookie']",
+    ];
+
+    let refuse_keywords = ["cookie", "cookies", "recusar", "negar", "não aceitar", "rejeitar", "refuse", "reject"];
+
+    for sel in banner_selectors {
+        let banner = match page.find_element(sel).await {
+            Ok(b) => b,
+            Err(_) => continue,
+        };
+
+        let buttons = match banner.find_elements("button, input[type='button']").await {
+            Ok(btns) => btns,
+            Err(_) => continue,
+        };
+
+        for btn in buttons {
+            let text = match btn.inner_text().await {
+                Ok(Some(t)) => t.to_lowercase(),
+                Ok(None) | Err(_) => continue,
+            };
+
+            if refuse_keywords.iter().any(|k| text.contains(k)) {
+                return true;
+            }
+        }
+    }
+
+    let elements = match page.find_elements("div, section, dialog").await {
+        Ok(el) => el,
+        Err(_) => return false,
+    };
+
+    for el in elements {
+        let text = match el.inner_text().await {
+            Ok(Some(t)) => t.to_lowercase(),
+            _ => String::new(),
+        };
+
+        if text.contains("cookie")
+            || text.contains("cookies")
+            || text.contains("recusar")
+            || text.contains("negar")
+            || text.contains("não aceitar")
+            || text.contains("rejeitar")
+            || text.contains("refuse")
+            || text.contains("reject")
+        {
+            if !is_visible(&el).await {
+                continue;
+            }
+
+            let position = match el
+                .call_js_fn(
+                    r#"
+                    (el) => window.getComputedStyle(el).position
+                    "#,
+                    false,
+                )
+                .await
+            {
+                Ok(res) => res.result.value.and_then(|v| v.as_str().map(|s| s.to_string())).unwrap_or_default(),
+                Err(_) => String::new(),
+            };
+
+            if position == "fixed" || position == "sticky" {
+                return true;
+            }
+        }
+    }
+
+    let blocked = match page
+        .evaluate(
+            r#"
+            (async () => {
+                const el = document.elementFromPoint(window.innerWidth/2, window.innerHeight/2);
+                if (!el) return false;
+                const style = getComputedStyle(el);
+                return (
+                    (style.position === 'fixed' || style.position === 'sticky') &&
+                    (style.zIndex && parseInt(style.zIndex) > 1000) &&
+                    (el.innerText.toLowerCase().includes('cookie') 
+                    || text.contains("cookies")
+                    || text.contains("recusar")
+                    || text.contains("negar")
+                    || text.contains("não aceitar")
+                    || text.contains("rejeitar")
+                    || text.contains("refuse")
+                    || text.contains("reject"))
+                );
+            })()
+            "#,
+        )
+        .await
+    {
+        Ok(ret) => ret.value().and_then(|v| v.as_bool()).unwrap_or(false),
+        Err(_) => false,
+    };
+
+    blocked
 }
 
 pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
@@ -136,7 +264,7 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
         || full_text.contains("notificação de privacidade")
         || full_text.contains("privacy policy");
 
-    let has_cookie_refusal = allows_cookie_refusal(&full_text).await;
+    let has_cookie_refusal = allows_cookie_refusal(&page).await;
     let respects_cookie_consent = check_cookie_consent(&page).await;
 
     let mut has_password_policy = PasswordResult {
