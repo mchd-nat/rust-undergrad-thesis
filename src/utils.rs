@@ -7,7 +7,6 @@ use crate::password_strength::PasswordResult;
 use chromiumoxide::{Browser, BrowserConfig, Page};
 use chromiumoxide::cdp::browser_protocol::network::Cookie;
 use chromiumoxide::Element;
-use chromiumoxide::handler::viewport::Viewport;
 use futures_util::StreamExt;
 use robotstxt_rs::RobotsTxt;
 use scraper::{Html, Selector};
@@ -192,18 +191,11 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
     let mut results = vec![];
 
     let config = BrowserConfig::builder()
-    .viewport(Viewport {
-        width: 1280,
-        height: 720,
-        device_scale_factor: Some(1.0),
-        emulating_mobile: false,
-        has_touch: false,
-        is_landscape: true,
-    })
-    .no_sandbox()
-    .build()
-    .unwrap();
-    
+        .chrome_executable("/usr/bin/chromium")
+        .no_sandbox()
+        .build()
+        .unwrap();
+
     let (browser, mut handler) = match Browser::launch(config).await {
         Ok(b) => b,
         Err(e) => {
