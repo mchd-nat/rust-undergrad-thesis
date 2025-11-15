@@ -1,19 +1,14 @@
 // SPDX-FileCopyrightText: 2025 Natália Silva Machado
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use crate::password_strength::password_has_basic_checks;
-use crate::password_strength::PasswordResult;
-
-use chromiumoxide::{Browser, BrowserConfig, Page};
-use chromiumoxide::cdp::browser_protocol::network::Cookie;
-use chromiumoxide::Element;
-use futures_util::StreamExt;
+use fantoccini::{Client, ClientBuilder, Locator};
 use robotstxt_rs::RobotsTxt;
-use scraper::{Html, Selector};
 use serde::Serialize;
-use std::collections::{HashSet, VecDeque};
-use tokio::time::Duration;
+use std::{collections::{HashSet, VecDeque}};
+use tokio::time::{Duration, sleep};
 use url::Url;
+
+use crate::password_strength::{PasswordResult, password_has_basic_checks};
 
 #[derive(Serialize, Clone)]
 pub struct CheckResult {
@@ -22,60 +17,39 @@ pub struct CheckResult {
     pub error: Option<String>,
 }
 
-pub async fn check_cookie_consent(page: &Page) -> bool {
-    let cookies_before: Vec<Cookie> = page.get_cookies().await.expect("Erro ao buscar cookies");
-    
-    cookies_before.is_empty()
-}
-
 pub async fn check_robots(url: String) -> bool {
     let robots_url = format!("{}/robots.txt", url.trim_end_matches('/'));
     match RobotsTxt::from_url(&robots_url).await {
         Ok(r) => r.can_fetch("DataSniffingCaramelo", &url),
-        Err(e) => {
-            eprintln!("Erro ao checar robots.txt: {}", e);
-            false
-        }
-    }
-}
-
-pub async fn check_url(url: &String) -> bool {
-    let formatted_url: String = url
-                                .to_lowercase()
-                                .chars()
-                                .filter(|c| c.is_alphanumeric())
-                                .collect();
-
-    formatted_url.contains("cadastro")
-        || formatted_url.contains("signup")
-        || formatted_url.contains("criarconta")
-        || formatted_url.contains("novaconta")
-}
-
-pub async fn is_visible(el: &Element) -> bool {
-    match el
-        .call_js_fn(
-            r#"
-            (el) => {
-                const rect = el.getBoundingClientRect();
-                return rect.width > 0 && rect.height > 0 &&
-                       rect.bottom >= 0 && rect.right >= 0;
-            }
-            "#,
-            false,
-        )
-        .await
-    {
-        Ok(ret) => ret.result.value.and_then(|v| v.as_bool()).unwrap_or(false),
         Err(_) => false,
     }
 }
 
-pub async fn allows_cookie_refusal(page: &Page) -> bool {
-    
-    tokio::time::sleep(Duration::from_millis(3000)).await;
+pub fn is_potential_signup(url: &String) -> bool {
+    let formatted: String = url
+        .to_lowercase()
+        .chars()
+        .filter(|c| c.is_alphanumeric())
+        .collect();
 
-    let banner_selectors = [
+    formatted.contains("cadastro")
+        || formatted.contains("signup")
+        || formatted.contains("criarconta")
+        || formatted.contains("novaconta")
+        || formatted.contains("cadastrarse")
+}
+
+pub async fn get_page_text(client: &Client) -> String {
+    match client.find(Locator::Css("body")).await {
+        Ok(body) => body.text().await.unwrap_or_default(),
+        Err(_) => String::new(),
+    }
+}
+
+pub async fn allows_cookie_refusal(client: &Client) -> bool {
+    sleep(Duration::from_millis(1500)).await;
+
+    let selectors = [
         "#onetrust-banner-sdk",
         "#CybotCookiebotDialog",
         ".didomi-popup",
@@ -84,242 +58,152 @@ pub async fn allows_cookie_refusal(page: &Page) -> bool {
         ".cookie-consent",
         ".cookie-banner",
         ".cookie-notice",
-        "[id*='cookie']",
-        "[class*='cookie']",
     ];
 
-    let refuse_keywords = ["cookie", "cookies", "recusar", "negar", "não aceitar", "rejeitar", "refuse", "reject"];
+    let refusal = [
+        "recusar",
+        "negar",
+        "não aceitar",
+        "rejeitar",
+        "refuse",
+        "reject",
+    ];
 
-    for sel in banner_selectors {
-        let banner = match page.find_element(sel).await {
-            Ok(b) => b,
-            Err(_) => continue,
-        };
-
-        let buttons = match banner.find_elements("button, input[type='button']").await {
-            Ok(btns) => btns,
-            Err(_) => continue,
-        };
-
-        for btn in buttons {
-            let text = match btn.inner_text().await {
-                Ok(Some(t)) => t.to_lowercase(),
-                Ok(None) | Err(_) => continue,
-            };
-
-            if refuse_keywords.iter().any(|k| text.contains(k)) {
-                return true;
+    for sel in selectors {
+        if let Ok(banner) = client.find(Locator::Css(sel)).await {
+            if let Ok(buttons) = banner.find_all(Locator::Css("button")).await {
+                for b in buttons {
+                    if let Ok(text) = b.text().await {
+                        let t = text.to_lowercase();
+                        if refusal.iter().any(|k| t.contains(k)) {
+                            return true;
+                        }
+                    }
+                }
             }
         }
     }
 
-    let elements = match page.find_elements("div, section, dialog").await {
-        Ok(el) => el,
-        Err(_) => return false,
-    };
-
-    for el in elements {
-        let text = match el.inner_text().await {
-            Ok(Some(t)) => t.to_lowercase(),
-            _ => String::new(),
-        };
-
-        if text.contains("cookie")
-            || text.contains("cookies")
-            || text.contains("recusar")
-            || text.contains("negar")
-            || text.contains("não aceitar")
-            || text.contains("rejeitar")
-            || text.contains("refuse")
-            || text.contains("reject")
-        {
-            if !is_visible(&el).await {
-                continue;
-            }
-
-            let position = match el
-                .call_js_fn(
-                    r#"
-                    (el) => window.getComputedStyle(el).position
-                    "#,
-                    false,
-                )
-                .await
-            {
-                Ok(res) => res.result.value.and_then(|v| v.as_str().map(|s| s.to_string())).unwrap_or_default(),
-                Err(_) => String::new(),
-            };
-
-            if position == "fixed" || position == "sticky" {
-                return true;
+    if let Ok(divs) = client.find_all(Locator::Css("button")).await {
+        for el in divs {
+            if let Ok(t) = el.text().await {
+                let tl = t.to_lowercase();
+                if refusal.iter().any(|k| tl.contains(k)) {
+                    return true;
+                }
             }
         }
     }
 
-    let blocked = match page
-        .evaluate(
-            r#"
-            (async () => {
-                const el = document.elementFromPoint(window.innerWidth/2, window.innerHeight/2);
-                if (!el) return false;
-                const style = getComputedStyle(el);
-                return (
-                    (style.position === 'fixed' || style.position === 'sticky') &&
-                    (style.zIndex && parseInt(style.zIndex) > 1000) &&
-                    (el.innerText.toLowerCase().includes('cookie') 
-                    || text.contains("cookies")
-                    || text.contains("recusar")
-                    || text.contains("negar")
-                    || text.contains("não aceitar")
-                    || text.contains("rejeitar")
-                    || text.contains("refuse")
-                    || text.contains("reject"))
-                );
-            })()
-            "#,
-        )
-        .await
-    {
-        Ok(ret) => ret.value().and_then(|v| v.as_bool()).unwrap_or(false),
+    false
+}
+
+pub async fn check_cookie_consent(client: &Client) -> bool {
+
+    match client.get_all_cookies().await {
+        Ok(c) => c.is_empty(),
         Err(_) => false,
-    };
-
-    blocked
+    }
 }
 
 pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
     let mut results = vec![];
 
-    let config = BrowserConfig::builder()
-        .chrome_executable("/usr/bin/chromium")
-        .no_sandbox()
-        .build()
-        .unwrap();
-
-    let (browser, mut handler) = match Browser::launch(config).await {
-        Ok(b) => b,
-        Err(e) => {
-            results.push(CheckResult {
-                check: "Erro ao iniciar navegador".into(),
-                passed: false,
-                error: Some(e.to_string()),
-            });
-            return results;
-        }
-    };
-
-    tokio::spawn(async move {
-        while let Some(_event) = handler.next().await {}
-    });
-
-    let page = match browser.new_page(url).await {
-        Ok(p) => p,
-        Err(e) => {
-            results.push(CheckResult {
-                check: "Erro ao abrir página inicial".into(),
-                passed: false,
-                error: Some(e.to_string()),
-            });
-            return results;
-        }
-    };
-
+    let client = match ClientBuilder::native()
+        .connect("http://localhost:9515")
+        .await {
+            Ok(c) => c,
+            Err(e) => {
+                results.push(CheckResult {
+                    check: "Erro ao iniciar navegador".into(),
+                    passed: false,
+                    error: Some(e.to_string()),
+                });
+                return results;
+            }
+        };
+    
     if !check_robots(url.to_string()).await {
         results.push(CheckResult {
             check: "Website inserido não permite a ação de webcrawlers".into(),
             passed: false,
             error: None,
         });
+
+        let _ = client.close().await;
         return results;
     }
 
-    let html_content = match page.content().await {
-        Ok(c) => c,
-        Err(e) => {
-            results.push(CheckResult {
-                check: "Erro ao obter conteúdo da página".into(),
-                passed: false,
-                error: Some(e.to_string()),
-            });
-            return results;
-        }
-    };
+    if let Err(e) = client.goto(url).await {
+        results.push(CheckResult { 
+            check: "Erro ao abrir página inicial".into(),
+            passed: false,
+            error: Some(e.to_string()),
+        });
+        let _ = client.close().await;
+        return results;
+    }
 
-    let document = Html::parse_document(&html_content);
-    let full_text: String = document.root_element()
-        .text()
-        .collect::<Vec<_>>()
-        .join(" ")
-        .to_lowercase();
+    sleep(Duration::from_millis(800)).await;
+    let text = get_page_text(&client).await.to_lowercase();
 
-    let has_privacy_policy = full_text.contains("política de privacidade")
-        || full_text.contains("notificação de privacidade")
-        || full_text.contains("privacy policy");
+    let has_privacy_policy = text.contains("política de privacidade")
+        || text.contains("notificação de privacidade")
+        || text.contains("privacy policy");
 
-    let has_cookie_refusal = allows_cookie_refusal(&page).await;
-    let respects_cookie_consent = check_cookie_consent(&page).await;
-
-    let mut has_password_policy = PasswordResult {
-        password_input: true,
+    let has_cookie_refusal = allows_cookie_refusal(&client).await;
+    let respects_cookie_consent = check_cookie_consent(&client).await;
+    let mut password_result = PasswordResult {
+        password_input: false,
         passed_checks: false,
         error: false,
     };
 
-    let base_url = url.to_string();
-    let base_domain = url.split("/").nth(2).unwrap_or("").to_string();
-
-    if check_url(&base_url).await {
-        has_password_policy = password_has_basic_checks(&base_url).await;
+    if is_potential_signup(&url.to_string()) {
+        password_result = password_has_basic_checks(url).await;
     }
 
-    let mut to_visit: VecDeque<String> = VecDeque::new();
-    let mut visited: HashSet<String> = HashSet::new();
-    to_visit.push_back(url.to_string());
+    let base_domain = Url::parse(url)
+        .ok()
+        .and_then(|u| u.domain().map(|s| s.to_string()))
+        .unwrap_or_default();
 
-    let max_pages = 30;
-    let mut pages_visited = 0;
+    let mut visited = HashSet::<String>::new();
+    let mut queue = VecDeque::<String>::new();
+    queue.push_back(url.to_string());
 
-    while let Some(current_url) = to_visit.pop_front() {
-        if pages_visited >= max_pages {
-            break;
-        }
+    let max_pages = 20;
+    let mut count = 0;
 
-        if visited.contains(&current_url) {
+    while let Some(current) = queue.pop_front() {
+        if visited.contains(&current) || count >= max_pages {
             continue;
         }
 
-        visited.insert(current_url.clone());
-        pages_visited += 1;
-        println!("Visitando: {}", current_url);
+        visited.insert(current.clone());
+        count += 1;
 
-        match browser.new_page(&current_url).await {
-            Ok(p) => {
-                if check_url(&current_url).await {
-                    has_password_policy = password_has_basic_checks(&base_url).await;
-                }
+        if client.goto(&current).await.is_err() {
+            continue;
+        }
 
-                if let Ok(html) = p.content().await {
-                    let doc = Html::parse_document(&html);
-                    let anchors = Selector::parse("a").unwrap();
-                    let base = Url::parse(&current_url).unwrap();
+        sleep(Duration::from_millis(500)).await;
 
-                    for link in doc.select(&anchors) {
-                        if let Some(href) = link.value().attr("href") {
-                            
-                            if let Ok(resolved) = base.join(href) {
-                                let resolved_str = resolved.as_str().to_string();
-
-                                if resolved_str.contains(&base_domain)
-                                    && !visited.contains(&resolved_str)
-                                {
-                                    to_visit.push_back(resolved_str);
-                                }
+        if let Ok(links) = client.find_all(Locator::Css("a")).await {
+            for a in links {
+                if let Ok(href) = a.attr("href").await {
+                    if let Some(h) = href {
+                        if let Ok(abs) = Url::parse(&current)
+                            .and_then(|b| b.join(&h))
+                        {
+                            let s = abs.to_string();
+                            if s.contains(&base_domain) && !visited.contains(&s) {
+                                queue.push_back(s);
                             }
                         }
                     }
                 }
             }
-            Err(e) => eprintln!("Erro ao visitar {}: {}", current_url, e),
         }
     }
 
@@ -341,13 +225,14 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
         error: None,
     });
 
-    if has_password_policy.password_input && !has_password_policy.error {
+    if password_result.password_input && !password_result.error {
         results.push(CheckResult {
             check: "Tem uma política de força de senha".into(),
-            passed: has_password_policy.passed_checks,
+            passed: password_result.passed_checks,
             error: None,
         });
     }
 
+    let _ = client.close().await;
     results
 }

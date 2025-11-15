@@ -12,39 +12,41 @@ mod utils;
 mod password_strength;
 
 use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-    response::{Html, IntoResponse, Json},
+    extract::{Json, Path, State},
     routing::{get, post},
+    http::StatusCode,
+    response::{Html, IntoResponse},
     Router,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-use tokio::task;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 use uuid::Uuid;
+use tokio::task;
 use tower_http::services::ServeDir;
 
 #[derive(Clone)]
 pub struct AppState {
-    tasks: Arc<Mutex<HashMap<String, TaskStatus>>>,
+    pub tasks: Arc<Mutex<HashMap<String, TaskStatus>>>,
 }
 
-#[derive(Clone, Serialize)]
-struct TaskStatus {
-    ready: bool,
-    results: Option<Vec<utils::CheckResult>>,
+#[derive(Clone)]
+pub struct TaskStatus {
+    pub ready: bool,
+    pub results: Option<Vec<utils::CheckResult>>,
 }
 
 #[derive(Deserialize)]
 pub struct CrawlerRequest {
-    url: String,
+    pub url: String,
 }
 
 #[derive(Serialize)]
-struct StartResponse {
-    success: bool,
-    task_id: String,
+pub struct StartResponse {
+    pub success: bool,
+    pub task_id: String,
 }
 
 #[tokio::main]
@@ -71,17 +73,22 @@ async fn main() {
         )
         .with_state(state);
 
-    let mut listener = tokio::net::TcpListener::bind("0.0.0.0:10000")
-        .await
-        .unwrap();
+
+    let mut port = std::env::var("PORT").unwrap_or("8080".to_string());
+    let mut addr = format!("0.0.0.0:{}", port);
 
     if cfg!(debug_assertions) {
-        listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
-            .await
-            .unwrap();
+        port = std::env::var("PORT").unwrap_or("3000".to_string());
+        addr = format!("127.0.0.1:{}", port);
     }
-    
-    axum::serve(listener, app).await.unwrap();
+
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .expect("failed to bind");
+
+    axum::serve(listener, app)
+        .await
+        .expect("server error");
 }
 
 async fn serve_html() -> impl IntoResponse {
@@ -89,7 +96,7 @@ async fn serve_html() -> impl IntoResponse {
     Html(html_content)
 }
 
-pub async fn run_crawler(
+async fn run_crawler(
     State(state): State<AppState>,
     Json(payload): Json<CrawlerRequest>,
 ) -> impl IntoResponse {
@@ -110,15 +117,8 @@ pub async fn run_crawler(
     let state_clone = state.clone();
     let url = payload.url.clone();
 
-    task::spawn_blocking(move || {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-
-        let results = rt.block_on(async {
-            utils::run_crawler(&url).await
-        });
+    task::spawn(async move {
+        let results = utils::run_crawler(&url).await;
 
         let mut tasks = state_clone.tasks.lock().unwrap();
         tasks.insert(
@@ -131,7 +131,7 @@ pub async fn run_crawler(
     });
 
     (
-        axum::http::StatusCode::OK,
+        StatusCode::OK,
         Json(StartResponse {
             success: true,
             task_id,
@@ -144,15 +144,30 @@ async fn get_crawler_result(
     Path(task_id): Path<String>,
 ) -> impl IntoResponse {
     let tasks = state.tasks.lock().unwrap();
-    
-    match tasks.get(&task_id) {
-        Some(status) => (StatusCode::OK, Json(status.clone())),
-        None => (
-            StatusCode::NOT_FOUND,
-            Json(TaskStatus {
-                ready: false,
-                results: None,
-            }),
-        ),
+
+    if let Some(task) = tasks.get(&task_id) {
+        if task.ready {
+            return (
+                StatusCode::OK,
+                Json(serde_json::json!({
+                    "ready": true,
+                    "results": task.results
+                })),
+            );
+        }
+
+        return (
+            StatusCode::OK,
+            Json(serde_json::json!({
+                "ready": false
+            })),
+        );
     }
+
+    (
+        StatusCode::NOT_FOUND,
+        Json(serde_json::json!({
+            "error": "Task not found"
+        })),
+    )
 }
