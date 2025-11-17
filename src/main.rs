@@ -12,41 +12,39 @@ mod utils;
 mod password_strength;
 
 use axum::{
-    extract::{Json, Path, State},
-    routing::{get, post},
+    extract::{Path, State},
     http::StatusCode,
-    response::{Html, IntoResponse},
+    response::{Html, IntoResponse, Json},
+    routing::{get, post},
     Router,
 };
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
-use uuid::Uuid;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use tokio::task;
+use uuid::Uuid;
 use tower_http::services::ServeDir;
 
 #[derive(Clone)]
-pub struct AppState {
-    pub tasks: Arc<Mutex<HashMap<String, TaskStatus>>>,
+struct AppState {
+    tasks: Arc<Mutex<HashMap<String, TaskStatus>>>,
 }
 
-#[derive(Clone)]
-pub struct TaskStatus {
-    pub ready: bool,
-    pub results: Option<Vec<utils::CheckResult>>,
+#[derive(Clone, Serialize)]
+struct TaskStatus {
+    ready: bool,
+    results: Option<Vec<utils::CheckResult>>,
 }
 
 #[derive(Deserialize)]
-pub struct CrawlerRequest {
-    pub url: String,
+struct CrawlerRequest {
+    url: String,
 }
 
 #[derive(Serialize)]
-pub struct StartResponse {
-    pub success: bool,
-    pub task_id: String,
+struct StartResponse {
+    success: bool,
+    task_id: String,
 }
 
 #[tokio::main]
@@ -73,22 +71,17 @@ async fn main() {
         )
         .with_state(state);
 
-
-    let mut port = std::env::var("PORT").unwrap_or("8080".to_string());
-    let mut addr = format!("0.0.0.0:{}", port);
+    let mut listener = tokio::net::TcpListener::bind("0.0.0.0:10000")
+        .await
+        .unwrap();
 
     if cfg!(debug_assertions) {
-        port = std::env::var("PORT").unwrap_or("3000".to_string());
-        addr = format!("127.0.0.1:{}", port);
+        listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
+            .await
+            .unwrap();
     }
-
-    let listener = tokio::net::TcpListener::bind(addr)
-        .await
-        .expect("failed to bind");
-
-    axum::serve(listener, app)
-        .await
-        .expect("server error");
+    
+    axum::serve(listener, app).await.unwrap();
 }
 
 async fn serve_html() -> impl IntoResponse {
@@ -116,10 +109,10 @@ async fn run_crawler(
     let task_id_clone = task_id.clone();
     let state_clone = state.clone();
     let url = payload.url.clone();
-
+    
     task::spawn(async move {
         let results = utils::run_crawler(&url).await;
-
+        
         let mut tasks = state_clone.tasks.lock().unwrap();
         tasks.insert(
             task_id_clone,
@@ -144,30 +137,15 @@ async fn get_crawler_result(
     Path(task_id): Path<String>,
 ) -> impl IntoResponse {
     let tasks = state.tasks.lock().unwrap();
-
-    if let Some(task) = tasks.get(&task_id) {
-        if task.ready {
-            return (
-                StatusCode::OK,
-                Json(serde_json::json!({
-                    "ready": true,
-                    "results": task.results
-                })),
-            );
-        }
-
-        return (
-            StatusCode::OK,
-            Json(serde_json::json!({
-                "ready": false
-            })),
-        );
+    
+    match tasks.get(&task_id) {
+        Some(status) => (StatusCode::OK, Json(status.clone())),
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(TaskStatus {
+                ready: false,
+                results: None,
+            }),
+        ),
     }
-
-    (
-        StatusCode::NOT_FOUND,
-        Json(serde_json::json!({
-            "error": "Task not found"
-        })),
-    )
 }

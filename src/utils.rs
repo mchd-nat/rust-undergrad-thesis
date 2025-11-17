@@ -1,14 +1,15 @@
 // SPDX-FileCopyrightText: 2025 Natália Silva Machado
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-use fantoccini::{Client, ClientBuilder, Locator};
-use robotstxt_rs::RobotsTxt;
-use serde::Serialize;
-use std::{collections::{HashSet, VecDeque}};
-use tokio::time::{Duration, sleep};
-use url::Url;
+use crate::password_strength::password_has_basic_checks;
+use crate::password_strength::ChecksResult;
 
-use crate::password_strength::{PasswordResult, password_has_basic_checks};
+use reqwest::Url;
+use reqwest::Response as R;
+use robotstxt_rs::RobotsTxt;
+use scraper::{Html, Selector};
+use serde::Serialize;
+use std::collections::{HashSet, VecDeque};
 
 #[derive(Serialize, Clone)]
 pub struct CheckResult {
@@ -17,222 +18,194 @@ pub struct CheckResult {
     pub error: Option<String>,
 }
 
+pub async fn check_cookie_consent(response: &R) -> bool {
+    let r = response;
+    let cookie_headers = r.headers().get_all(reqwest::header::SET_COOKIE);
+    
+    cookie_headers.iter().next().is_none()
+}
+
 pub async fn check_robots(url: String) -> bool {
-    let robots_url = format!("{}/robots.txt", url.trim_end_matches('/'));
-    match RobotsTxt::from_url(&robots_url).await {
-        Ok(r) => r.can_fetch("DataSniffingCaramelo", &url),
-        Err(_) => false,
-    }
-}
+    let robots_url = url.as_str().to_owned() + "/robots.txt";
+    let robots = RobotsTxt::from_url(&robots_url).await;
 
-pub fn is_potential_signup(url: &String) -> bool {
-    let formatted: String = url
-        .to_lowercase()
-        .chars()
-        .filter(|c| c.is_alphanumeric())
-        .collect();
-
-    formatted.contains("cadastro")
-        || formatted.contains("signup")
-        || formatted.contains("criarconta")
-        || formatted.contains("novaconta")
-        || formatted.contains("cadastrarse")
-}
-
-pub async fn get_page_text(client: &Client) -> String {
-    match client.find(Locator::Css("body")).await {
-        Ok(body) => body.text().await.unwrap_or_default(),
-        Err(_) => String::new(),
-    }
-}
-
-pub async fn allows_cookie_refusal(client: &Client) -> bool {
-    sleep(Duration::from_millis(1500)).await;
-
-    let selectors = [
-        "#onetrust-banner-sdk",
-        "#CybotCookiebotDialog",
-        ".didomi-popup",
-        ".qc-cmp2-container",
-        ".trustarc-banner",
-        ".cookie-consent",
-        ".cookie-banner",
-        ".cookie-notice",
-    ];
-
-    let refusal = [
-        "recusar",
-        "negar",
-        "não aceitar",
-        "rejeitar",
-        "refuse",
-        "reject",
-    ];
-
-    for sel in selectors {
-        if let Ok(banner) = client.find(Locator::Css(sel)).await {
-            if let Ok(buttons) = banner.find_all(Locator::Css("button")).await {
-                for b in buttons {
-                    if let Ok(text) = b.text().await {
-                        let t = text.to_lowercase();
-                        if refusal.iter().any(|k| t.contains(k)) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if let Ok(divs) = client.find_all(Locator::Css("button")).await {
-        for el in divs {
-            if let Ok(t) = el.text().await {
-                let tl = t.to_lowercase();
-                if refusal.iter().any(|k| tl.contains(k)) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    false
-}
-
-pub async fn check_cookie_consent(client: &Client) -> bool {
-
-    match client.get_all_cookies().await {
-        Ok(c) => c.is_empty(),
-        Err(_) => false,
-    }
+    return robots.expect("Erro ao checar robots.txt").can_fetch("DataSniffingCaramelo", url.as_str());
 }
 
 pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
     let mut results = vec![];
-
-    let client = match ClientBuilder::native()
-        .connect("http://localhost:4444")
-        .await {
-            Ok(c) => c,
-            Err(e) => {
-                results.push(CheckResult {
-                    check: "Erro ao iniciar navegador".into(),
-                    passed: false,
-                    error: Some(e.to_string()),
-                });
-                return results;
-            }
-        };
     
-    if !check_robots(url.to_string()).await {
+    let base_url = match Url::parse(&url) {
+        Ok(u) => u,
+        Err(e) => {
+            results.push(CheckResult {
+                check: "Erro ao processar URL".into(),
+                passed: false,
+                error: Some(e.to_string()),
+            });
+            return results;
+        }
+    };
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(10))
+        .user_agent("DataSniffingCaramelo (natalias2@mx2.unisc.br)")
+        .build()
+        .unwrap();
+    
+    if check_robots(base_url.to_string()).await {
+        let mut has_privacy_policy = false;
+        // let mut has_cookie_refusal = false;
+        let mut has_password_policy: ChecksResult = ChecksResult{
+            password_input: true,
+            passed_checks: false,
+            error: false
+        };
+
+        match client.get(base_url.clone()).send().await {
+            Ok(response) => {
+                match response.text().await {
+                    Ok(html_content) => {
+                        let document = Html::parse_document(&html_content);
+                        let full_text: String = document
+                            .root_element()
+                            .text()
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                            .trim()
+                            .to_string()
+                            .to_lowercase();
+
+                        has_privacy_policy = full_text.contains("política de privacidade")
+                            || full_text.contains("notificação de privacidade")
+                            || full_text.contains("privacy policy");
+                            
+                        /* if full_text.contains("cookies") {
+                            if full_text.contains("recusar")
+                            || full_text.contains("negar")
+                            || full_text.contains("não aceitar")
+                            || full_text.contains("rejeitar")
+                            || full_text.contains("refuse")
+                            || full_text.contains("reject") {
+                                has_cookie_refusal = true;
+                            }
+                        } */
+                    }
+                    Err(e) => {
+                        eprintln!("Erro ao ler página {}: {}", base_url, e);
+                    }
+                }
+            }
+            Err(e) => {
+                eprintln!("Erro ao tentar alcançar {}: {}", base_url, e);
+            }
+        }
+
+        let base_domain = base_url.domain().unwrap_or("").to_string();
+        
+        let mut to_visit: VecDeque<String> = VecDeque::new();
+        let mut visited: HashSet<String> = HashSet::new();
+        to_visit.push_back(url.to_string());
+
+        let max_pages = 30;
+        let mut pages_visited = 0;
+
+        let mut respects_cookie_consent = false;
+
+        while let Some(current_url) = to_visit.pop_front() {
+            if pages_visited >= max_pages {
+                break;
+            }
+
+            if visited.contains(&current_url) {
+                continue;
+            }
+
+            visited.insert(current_url.clone());
+            pages_visited += 1;
+
+            println!("Visitando: {}", current_url);
+            if check_robots(current_url.to_string()).await {
+                match client.get(&current_url).send().await {
+                    Ok(response) => {
+                        //if has_cookie_refusal {
+                            respects_cookie_consent = check_cookie_consent(&response).await;
+                        //}
+
+                        let formatted_string = &current_url
+                            .to_lowercase()
+                            .replace(' ', "");
+
+                        if formatted_string.contains("cadastro") 
+                            || formatted_string.contains("signup")
+                            || formatted_string.contains("criar")
+                            || formatted_string.contains("nova") {
+                                has_password_policy = password_has_basic_checks(&current_url).await;
+                            }
+
+                        match response.text().await {
+                            Ok(html_content) => {
+                                let document = Html::parse_document(&html_content);
+
+                                let anchors = Selector::parse("a").unwrap();
+                                for link in document.select(&anchors) {
+                                    if let Some(href) = link.value().attr("href") {
+                                        if let Ok(absolute_url) = base_url.join(href) {
+                                            let link_domain = absolute_url.domain().unwrap_or("");
+                                            
+                                            if link_domain == base_domain && !visited.contains(absolute_url.as_str()) {
+                                                to_visit.push_back(absolute_url.to_string());
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                eprintln!("Erro ao ler página {}: {}", current_url, e);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Erro ao tentar alcançar {}: {}", current_url, e);
+                    }
+                }
+            } 
+        }
+
+        results.push(CheckResult {
+            check: "Política de Privacidade".into(),
+            passed: has_privacy_policy,
+            error: None,
+        });
+        
+        /* if !respects_cookie_consent {
+            results.push(CheckResult {
+                check: "Opção de recusar coleta de Cookies".into(),
+                passed: has_cookie_refusal,
+                error: None,
+            });
+        } */
+
+        results.push(CheckResult {
+            check: "Coleta cookies somente após consentimento do usuário".into(),
+            passed: respects_cookie_consent,
+            error: None,
+        });
+
+        if has_password_policy.password_input && !has_password_policy.error {
+            results.push(CheckResult {
+                check: "Tem uma política de força de senha".into(),
+                passed: has_password_policy.passed_checks,
+                error: None,
+            });
+        }
+    } else {
         results.push(CheckResult {
             check: "Website inserido não permite a ação de webcrawlers".into(),
             passed: false,
             error: None,
         });
-
-        let _ = client.close().await;
-        return results;
     }
 
-    if let Err(e) = client.goto(url).await {
-        results.push(CheckResult { 
-            check: "Erro ao abrir página inicial".into(),
-            passed: false,
-            error: Some(e.to_string()),
-        });
-        let _ = client.close().await;
-        return results;
-    }
-
-    sleep(Duration::from_millis(800)).await;
-    let text = get_page_text(&client).await.to_lowercase();
-
-    let has_privacy_policy = text.contains("política de privacidade")
-        || text.contains("notificação de privacidade")
-        || text.contains("privacy policy");
-
-    let has_cookie_refusal = allows_cookie_refusal(&client).await;
-    let respects_cookie_consent = check_cookie_consent(&client).await;
-    let mut password_result = PasswordResult {
-        password_input: false,
-        passed_checks: false,
-        error: false,
-    };
-
-    if is_potential_signup(&url.to_string()) {
-        password_result = password_has_basic_checks(url).await;
-    }
-
-    let base_domain = Url::parse(url)
-        .ok()
-        .and_then(|u| u.domain().map(|s| s.to_string()))
-        .unwrap_or_default();
-
-    let mut visited = HashSet::<String>::new();
-    let mut queue = VecDeque::<String>::new();
-    queue.push_back(url.to_string());
-
-    let max_pages = 20;
-    let mut count = 0;
-
-    while let Some(current) = queue.pop_front() {
-        if visited.contains(&current) || count >= max_pages {
-            continue;
-        }
-
-        visited.insert(current.clone());
-        count += 1;
-
-        if client.goto(&current).await.is_err() {
-            continue;
-        }
-
-        sleep(Duration::from_millis(500)).await;
-
-        if let Ok(links) = client.find_all(Locator::Css("a")).await {
-            for a in links {
-                if let Ok(href) = a.attr("href").await {
-                    if let Some(h) = href {
-                        if let Ok(abs) = Url::parse(&current)
-                            .and_then(|b| b.join(&h))
-                        {
-                            let s = abs.to_string();
-                            if s.contains(&base_domain) && !visited.contains(&s) {
-                                queue.push_back(s);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    results.push(CheckResult {
-        check: "Política de Privacidade".into(),
-        passed: has_privacy_policy,
-        error: None,
-    });
-
-    results.push(CheckResult {
-        check: "Opção de recusar coleta de Cookies".into(),
-        passed: has_cookie_refusal,
-        error: None,
-    });
-
-    results.push(CheckResult {
-        check: "Coleta cookies somente após consentimento do usuário".into(),
-        passed: respects_cookie_consent,
-        error: None,
-    });
-
-    if password_result.password_input && !password_result.error {
-        results.push(CheckResult {
-            check: "Tem uma política de força de senha".into(),
-            passed: password_result.passed_checks,
-            error: None,
-        });
-    }
-
-    let _ = client.close().await;
     results
 }
