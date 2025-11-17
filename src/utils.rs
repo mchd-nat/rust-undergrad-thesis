@@ -110,7 +110,7 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
     let mut results = vec![];
 
     let client = match ClientBuilder::native()
-        .connect("http://localhost:9515")
+        .connect("http://localhost:4444")
         .await {
             Ok(c) => c,
             Err(e) => {
