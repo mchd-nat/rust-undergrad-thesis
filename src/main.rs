@@ -71,15 +71,11 @@ async fn main() {
         )
         .with_state(state);
 
-    let mut listener = tokio::net::TcpListener::bind("0.0.0.0:10000")
+    let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
+    let bind_addr = format!("0.0.0.0:{}", port);
+    let listener = tokio::net::TcpListener::bind(&bind_addr)
         .await
-        .unwrap();
-
-    if cfg!(debug_assertions) {
-        listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
-            .await
-            .unwrap();
-    }
+        .expect("failed to bind listener");
     
     axum::serve(listener, app).await.unwrap();
 }
