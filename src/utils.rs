@@ -55,7 +55,7 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
     
     if check_robots(base_url.to_string()).await {
         let mut has_privacy_policy = false;
-        // let mut has_cookie_refusal = false;
+        let mut has_cookie_refusal = false;
         let mut has_password_policy: ChecksResult = ChecksResult{
             password_input: true,
             passed_checks: false,
