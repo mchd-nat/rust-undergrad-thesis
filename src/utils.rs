@@ -80,7 +80,7 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
                             || full_text.contains("notificação de privacidade")
                             || full_text.contains("privacy policy");
                             
-                        /* if full_text.contains("cookies") {
+                        if full_text.contains("cookies") {
                             if full_text.contains("recusar")
                             || full_text.contains("negar")
                             || full_text.contains("não aceitar")
@@ -89,7 +89,7 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
                             || full_text.contains("reject") {
                                 has_cookie_refusal = true;
                             }
-                        } */
+                        }
                     }
                     Err(e) => {
                         eprintln!("Erro ao ler página {}: {}", base_url, e);
@@ -128,9 +128,9 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
             if check_robots(current_url.to_string()).await {
                 match client.get(&current_url).send().await {
                     Ok(response) => {
-                        //if has_cookie_refusal {
+                        if has_cookie_refusal {
                             respects_cookie_consent = check_cookie_consent(&response).await;
-                        //}
+                        }
 
                         let formatted_string = &current_url
                             .to_lowercase()
@@ -178,13 +178,13 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
             error: None,
         });
         
-        /* if !respects_cookie_consent {
+        if !respects_cookie_consent {
             results.push(CheckResult {
                 check: "Opção de recusar coleta de Cookies".into(),
                 passed: has_cookie_refusal,
                 error: None,
             });
-        } */
+        }
 
         results.push(CheckResult {
             check: "Coleta cookies somente após consentimento do usuário".into(),
