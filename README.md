@@ -1,4 +1,4 @@
-# Data-Sniffing Caramelo 🐕
+# Data-sniffing Caramelo 🐕
 
 ![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=for-the-badge&logo=rust&logoColor=white) ![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white) ![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white) ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E) ![Render](https://img.shields.io/badge/Render-%46E3B7.svg?style=for-the-badge&logo=render&logoColor=white)
 
@@ -15,7 +15,7 @@ A ferramenta foi criada como parte do meu TCC de Ciência da Computação. Atual
 
 ## 🧭 Como usar
 
-1. Acesse [https://datasniffing-caramelo.onrender.com/](https://datasniffing-caramelo.onrender.com/)
+1. Acesse [https://data-sniffingcaramelo.onrender.com/](https://data-sniffingcaramelo.onrender.com/)
 2. Insira a URL do website que deseja verificar
 3. Clique em "Checar website" e aguarde enquanto o caramelo fareja a web para você!
 
