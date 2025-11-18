@@ -1,90 +1,62 @@
 # -------------------------------------------------
-#  Builder stage – compile the Rust binary
+#  Builder stage – install Python + deps
 # -------------------------------------------------
-FROM rust:1.79-slim AS builder
+FROM python:3.12-slim AS builder
 
-WORKDIR /app
-
-# ---- System build‑tools & libs needed by Chromiumoxide ----
-RUN apt-get update && apt-get install -y \
-    pkg-config \
-    libssl-dev \
-    # ---- Chromiumoxide native deps ----
-    libgtk-3-dev \
-    libx11-dev \
-    libxcb1-dev \
-    libxrandr-dev \
-    libasound2-dev \
-    libatk-bridge2.0-dev \
-    libdrm-dev \
-    libgbm-dev \
-    libwayland-client0 \
-    libwayland-cursor0 \
-    libwayland-egl0 \
-    libxcomposite-dev \
-    libxdamage-dev \
-    libxfixes-dev \
-    libxkbcommon-dev \
-    libxshmfence-dev \
-    
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-# ---- Cache dependencies (Cargo.lock + Cargo.toml) ----
-COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo fetch   # download crates without compiling yet
-
-# ---- Copy the rest of the source and build ----
-COPY . .
-RUN cargo build --release
-
-# -------------------------------------------------
-#  Runtime stage – smallest possible image
-# -------------------------------------------------
-FROM debian:bookworm-slim
-
-WORKDIR /app
-
-RUN apt-get update && apt-get install -y \
-    libssl3 \
-    libgtk-3-0 \
-    libx11-6 \
-    libxcb1 \
-    libxrandr2 \
+# System packages needed by Playwright (optional)
+# If you never need JS rendering, you can delete the whole block.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    fonts-liberation \
     libasound2 \
     libatk-bridge2.0-0 \
-    libdrm2 \
-    libgbm1 \
-    libwayland-client0 \
-    libwayland-cursor0 \
-    libwayland-egl0 \
+    libatk1.0-0 \
+    libc6 \
+    libcairo2 \
+    libdbus-1-3 \
+    libexpat1 \
+    libfontconfig1 \
+    libgcc1 \
+    libglib2.0-0 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libstdc++6 \
+    libx11-6 \
     libxcomposite1 \
     libxdamage1 \
+    libxext6 \
     libxfixes3 \
-    libxkbcommon0 \
+    libxrandr2 \
     libxshmfence1 \
-    ca-certificates \
-    firefox-esr \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# ---- Geckodriver ----
-ENV GECKODRIVER_VERSION=v0.35.0
-RUN wget -O /tmp/geckodriver.tar.gz \
-    "https://github.com/mozilla/geckodriver/releases/download/${GECKODRIVER_VERSION}/geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz" \
-    && tar -xzf /tmp/geckodriver.tar.gz -C /usr/local/bin \
-    && rm /tmp/geckodriver.tar.gz \
-    && chmod +x /usr/local/bin/geckodriver
+WORKDIR /app
 
-# ---- Copy the compiled binary from the builder ----
-COPY --from=builder /app/target/release/rust-undergrad-thesis /usr/local/bin/app
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# ---- Small entrypoint that starts geckodriver then the app ----
-COPY entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
+# Copy the source code (including static assets)
+COPY . .
 
+# -------------------------------------------------
+#  Runtime stage – tiny image with only runtime deps
+# -------------------------------------------------
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# Copy only the compiled wheels and source from builder
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /app /app
+
+# Expose the port Render will set (via $PORT)
 ENV PORT=8080
 EXPOSE 8080
 
-ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+# Entrypoint – start the ASGI server
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8080"]
