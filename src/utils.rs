@@ -177,20 +177,20 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
             passed: has_privacy_policy,
             error: None,
         });
-        
-        if !respects_cookie_consent {
-            results.push(CheckResult {
-                check: "Opção de recusar coleta de Cookies".into(),
-                passed: has_cookie_refusal,
-                error: None,
-            });
-        }
 
         results.push(CheckResult {
             check: "Coleta cookies somente após consentimento do usuário".into(),
             passed: respects_cookie_consent,
             error: None,
         });
+        
+        if respects_cookie_consent {
+            results.push(CheckResult {
+                check: "Opção de recusar coleta de Cookies".into(),
+                passed: has_cookie_refusal,
+                error: None,
+            });
+        }
 
         if has_password_policy.password_input && !has_password_policy.error {
             results.push(CheckResult {
