@@ -102,6 +102,8 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
             }
         }
 
+        has_password_policy = password_has_basic_checks(&base_url.as_str(), r#"input"#).await;
+
         let base_domain = base_url.domain().unwrap_or("").to_string();
         
         let mut to_visit: VecDeque<String> = VecDeque::new();
@@ -141,8 +143,8 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
                             || formatted_string.contains("signup")
                             || formatted_string.contains("criar")
                             || formatted_string.contains("nova") {
-                                has_password_policy = password_has_basic_checks(&current_url).await;
-                            }
+                            has_password_policy = password_has_basic_checks(&current_url.as_str(), r#"input"#).await;
+                        }
 
                         match response.text().await {
                             Ok(html_content) => {
@@ -170,8 +172,8 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
                         eprintln!("Erro ao tentar alcançar {}: {}", current_url, e);
                     }
                 }
-            } 
-        }
+            }
+        } 
 
         results.push(CheckResult {
             check: "Política de Privacidade".into(),

@@ -9,7 +9,7 @@ pub struct ChecksResult {
     pub error: bool
 }
 
-pub async fn password_has_basic_checks(url: &str) -> ChecksResult {
+pub async fn password_has_basic_checks(url: &str, input: &str) -> ChecksResult {
     let client = reqwest::Client::builder()
         .cookie_store(true)
         .redirect(reqwest::redirect::Policy::limited(10))
@@ -42,7 +42,7 @@ pub async fn password_has_basic_checks(url: &str) -> ChecksResult {
     };
 
     let document = Html::parse_document(&body);
-    let input_sel = match Selector::parse(r#"input[type="password"]"#) {
+    let input_sel = match Selector::parse(input) {
         Ok(sel) => sel,
         Err(_) => return {
             ChecksResult {
