@@ -78,7 +78,8 @@ pub async fn run_crawler(url: &str) -> Vec<CheckResult> {
 
                         has_privacy_policy = full_text.contains("política de privacidade")
                             || full_text.contains("notificação de privacidade")
-                            || full_text.contains("privacy policy");
+                            || full_text.contains("privacy policy")
+                            || full_text.contains("aviso de privacidade");
                             
                         if full_text.contains("cookies") {
                             if full_text.contains("recusar")
